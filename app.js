@@ -184,6 +184,7 @@ function defaultState() {
     meta: { veranstaltung:'', ort:'', datum:'', besucher:'', ersteller:'', stand:'' },
     activeTab: 'gefaehrdung',
     filterBereich: 'alle',
+    filterRisk: 'alle',
     gefaehrdungen: KATALOG.map(toGefItem),
     concepts: { ordnungsdienst:{}, sanitaetsdienst:{}, brandschutz:{} },
     notfall: NOTFALL_DEFAULT.map(n => ({ ...n }))
@@ -231,6 +232,7 @@ function mergeState(p) {
     meta: Object.assign(d.meta, p.meta || {}),
     activeTab: p.activeTab || 'gefaehrdung',
     filterBereich: p.filterBereich || 'alle',
+    filterRisk: p.filterRisk || 'alle',
     gefaehrdungen: migriert ? d.gefaehrdungen : p.gefaehrdungen,
     concepts: Object.assign({ ordnungsdienst:{}, sanitaetsdienst:{}, brandschutz:{} }, p.concepts || {}),
     notfall: Array.isArray(p.notfall) ? p.notfall : d.notfall
@@ -278,10 +280,25 @@ function bereichOptions(selected) {
   return KATEGORIEN.map(k => `<option value="${esc(k)}"${k===selected?' selected':''}>${esc(k)}</option>`).join('');
 }
 
+/* trifft eine Gefährdung den aktiven Risiko-Filter? (Risiko = E×S) */
+function matchRisk(g) {
+  if (state.filterRisk === 'alle') return true;
+  const r = g.e * g.s;
+  switch (state.filterRisk) {
+    case 'green':  return r <= 3;
+    case 'yellow': return r >= 4 && r <= 6;
+    case 'orange': return r >= 7 && r <= 9;
+    case 'red':    return r >= 10;
+    case 'offen':  return r >= 7 && !g.erledigt;
+    default:       return true;
+  }
+}
+
 function renderGefTable() {
   const tbody = document.getElementById('gef-tbody');
   let list = visibleGef();
   if (state.filterBereich !== 'alle') list = list.filter(g => g.bereich === state.filterBereich);
+  if (state.filterRisk !== 'alle') list = list.filter(matchRisk);
 
   if (list.length === 0) {
     tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:18px;">Keine Einträge in diesem Filter.</td></tr>`;
@@ -350,12 +367,20 @@ function renderDashboard() {
     if (r <= 3) green++; else if (r <= 6) yellow++; else if (r <= 9) orange++; else red++;
     if (r >= 7 && !g.erledigt) offen++;
   });
-  dash.innerHTML = `
-    <div class="dash-card is-green"><div class="dash-num">${green}</div><div class="dash-label">gering (1–3)</div></div>
-    <div class="dash-card is-yellow"><div class="dash-num">${yellow}</div><div class="dash-label">mittel (4–6)</div></div>
-    <div class="dash-card is-orange"><div class="dash-num">${orange}</div><div class="dash-label">hoch (7–9)</div></div>
-    <div class="dash-card is-red"><div class="dash-num">${red}</div><div class="dash-label">sehr hoch (10–16)</div></div>
-    <div class="dash-card is-open"><div class="dash-num">${offen}</div><div class="dash-label">offene Maßnahmen (Risiko ≥ 7, nicht erledigt)</div></div>`;
+  const cards = [
+    ['green',  'is-green',  green,  'gering (1–3)'],
+    ['yellow', 'is-yellow', yellow, 'mittel (4–6)'],
+    ['orange', 'is-orange', orange, 'hoch (7–9)'],
+    ['red',    'is-red',    red,    'sehr hoch (10–16)'],
+    ['offen',  'is-open',   offen,  'offene Maßnahmen (Risiko ≥ 7, nicht erledigt)']
+  ];
+  dash.innerHTML = cards.map(([key, cls, num, label]) => {
+    const active = state.filterRisk === key;
+    return `<button type="button" class="dash-card ${cls}${active ? ' is-selected' : ''}" data-risk="${key}" aria-pressed="${active}" title="Tabelle nach dieser Stufe filtern">
+      <div class="dash-num">${num}</div>
+      <div class="dash-label">${label}</div>
+    </button>`;
+  }).join('');
 }
 
 /* ============================================================
@@ -598,10 +623,19 @@ function bindEvents() {
     if (field) { state.meta[field] = e.target.value; saveState(); }
   });
 
-  // Filterchips
+  // Filterchips (Bereich)
   document.getElementById('filter-bar').addEventListener('click', e => {
     const btn = e.target.closest('[data-filter]');
     if (btn) { state.filterBereich = btn.dataset.filter; renderFilterBar(); renderGefTable(); saveState(); }
+  });
+
+  // Dashboard-Kästen = Risiko-Filter (Toggle)
+  document.getElementById('dashboard').addEventListener('click', e => {
+    const card = e.target.closest('[data-risk]');
+    if (!card) return;
+    const key = card.dataset.risk;
+    state.filterRisk = (state.filterRisk === key) ? 'alle' : key;
+    renderDashboard(); renderGefTable(); saveState();
   });
 
   // Zeile ergänzen
