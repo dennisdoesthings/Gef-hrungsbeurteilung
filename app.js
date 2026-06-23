@@ -12,99 +12,109 @@ const STORAGE_KEY = 'gefb_state_v1';
    Feste Kategorienliste (für Bereich-Dropdown UND Filter)
    ------------------------------------------------------------ */
 const KATEGORIEN = [
-  'Aufbau/Abbau', 'Höhen/Lasten', 'Technik/Elektro', 'Technik/Bühne',
+  'Aufbau/Abbau', 'Höhen/Lasten', 'Technik/Bühne', 'Strom/Energie',
   'Brandschutz', 'Flucht/Rettung', 'Personenströme', 'Zutritt/Sicherheit',
-  'Beschäftigte', 'Catering/Hygiene', 'Außen/Witterung', 'Logistik/Verkehr',
-  'Gefahrstoffe', 'Notfall/Gefahrenabwehr', 'Inklusion', 'Sonstige'
+  'Messe/Ausstellung', 'Catering/Hygiene', 'Beschäftigte', 'Außen/Witterung',
+  'Logistik/Verkehr', 'Gefahrstoffe', 'Notfall/Gefahrenabwehr', 'Inklusion', 'Sonstige'
 ];
 
 /* ------------------------------------------------------------
-   Standardkatalog "Generisch"
+   Ein einziger, vollständiger Gefährdungskatalog
+   – Messe, Kongress, Tagung, Veranstaltungstechnik und Strom in
+     einem Katalog zusammengeführt (keine Trennung mehr).
    e/s = Risiko ohne Maßnahme, re/rs = Restrisiko mit Maßnahme
    ------------------------------------------------------------ */
-const KATALOG_GENERISCH = [
-  { id:'gen-1',  bereich:'Aufbau/Abbau', gefahr:'Absturz von Höhe (Rigging, Bühnenkante, Leiter)', massnahme:'T: Geländer/Absturzsicherung, Auffangnetze · O: Höhenarbeit nur durch befähigte Personen, Bereich absperren · P: PSAgA (Anschlagpunkte, Auffanggurt)', e:3, s:4, re:1, rs:4 },
-  { id:'gen-2',  bereich:'Aufbau/Abbau', gefahr:'Sturz von Leitern/Tritten', massnahme:'S: Hubarbeitsbühne statt Leiter wo möglich · O: geprüfte Leitern, Standsicherheit, Unterweisung', e:3, s:2, re:2, rs:2 },
-  { id:'gen-3',  bereich:'Aufbau/Abbau', gefahr:'Stolpern über Kabel/Material/Höhenunterschiede', massnahme:'T: Kabelbrücken/-kanäle, Abhängung · O: Wege freihalten, Markierung, ausreichende Beleuchtung', e:4, s:2, re:2, rs:2 },
-  { id:'gen-4',  bereich:'Aufbau/Abbau', gefahr:'Schnitt-/Quetschverletzungen (Werkzeug, Cases)', massnahme:'O: Unterweisung, geeignetes Werkzeug · P: Schnittschutz-/Arbeitshandschuhe, Sicherheitsschuhe', e:3, s:2, re:2, rs:2 },
+const KATALOG = [
+  /* ---- Aufbau / Abbau ---- */
+  { id:'k-01', bereich:'Aufbau/Abbau', gefahr:'Absturz von Höhe (Rigging, Bühnenkante, Leiter)', massnahme:'T: Geländer/Absturzsicherung, Auffangnetze · O: Höhenarbeit nur durch befähigte Personen, Bereich absperren · P: PSAgA (Anschlagpunkte, Auffanggurt)', e:3, s:4, re:1, rs:4 },
+  { id:'k-02', bereich:'Aufbau/Abbau', gefahr:'Sturz von Leitern/Tritten', massnahme:'S: Hubarbeitsbühne statt Leiter wo möglich · O: geprüfte Leitern, Standsicherheit, Unterweisung', e:3, s:2, re:2, rs:2 },
+  { id:'k-03', bereich:'Aufbau/Abbau', gefahr:'Stolpern über Kabel/Material/Höhenunterschiede', massnahme:'T: Kabelbrücken/-kanäle, Abhängung · O: Wege freihalten, Markierung, ausreichende Beleuchtung', e:4, s:2, re:2, rs:2 },
+  { id:'k-04', bereich:'Aufbau/Abbau', gefahr:'Schnitt-/Quetschverletzungen (Werkzeug, Cases)', massnahme:'O: Unterweisung, geeignetes Werkzeug · P: Schnittschutz-/Arbeitshandschuhe, Sicherheitsschuhe', e:3, s:2, re:2, rs:2 },
 
-  { id:'gen-5',  bereich:'Höhen/Lasten', gefahr:'Herabfallende Lasten / hängende Traversen', massnahme:'T: Sekundärsicherung (Safeties), geprüfte Lastaufnahmemittel · O: Bereich unter Last sperren · P: Helm', e:2, s:4, re:1, rs:4 },
-  { id:'gen-6',  bereich:'Höhen/Lasten', gefahr:'Versagen Anschlagmittel / Überlast Aufhängung', massnahme:'T: zugelassene Anschlagmittel mit Lastreserve · O: Prüfung durch Sachkundigen, Lastdokumentation', e:2, s:4, re:1, rs:4 },
-  { id:'gen-7',  bereich:'Höhen/Lasten', gefahr:'Einsturz Bühne/Podest/Traverse', massnahme:'T: statischer Nachweis, geprüfte Systeme · O: Aufbau nach Herstellervorgabe, Abnahme vor Nutzung', e:1, s:4, re:1, rs:4 },
+  /* ---- Höhen / Lasten ---- */
+  { id:'k-05', bereich:'Höhen/Lasten', gefahr:'Herabfallende Lasten / hängende Traversen', massnahme:'T: Sekundärsicherung (Safeties), geprüfte Lastaufnahmemittel · O: Bereich unter Last sperren · P: Helm', e:2, s:4, re:1, rs:4 },
+  { id:'k-06', bereich:'Höhen/Lasten', gefahr:'Versagen Anschlagmittel / Überlast Aufhängung', massnahme:'T: zugelassene Anschlagmittel mit Lastreserve · O: Prüfung durch Sachkundigen, Lastdokumentation', e:2, s:4, re:1, rs:4 },
+  { id:'k-07', bereich:'Höhen/Lasten', gefahr:'Einsturz Bühne/Podest/Traverse', massnahme:'T: statischer Nachweis, geprüfte Systeme · O: Aufbau nach Herstellervorgabe, Abnahme vor Nutzung', e:1, s:4, re:1, rs:4 },
 
-  { id:'gen-8',  bereich:'Technik/Elektro', gefahr:'Elektrische Gefährdung (Provisorien, Kabeltrassen)', massnahme:'T: RCD/FI-Schutz, geprüfte Betriebsmittel · O: Elektrofachkraft, DGUV-V3-Prüfung', e:3, s:3, re:1, rs:3 },
-  { id:'gen-9',  bereich:'Technik/Elektro', gefahr:'Überlast / Kabelbrand Mehrfachverteiler', massnahme:'T: ausreichend dimensionierte Verteilung, Absicherung · O: Lastverteilung, keine Kaskadierung', e:2, s:3, re:1, rs:3 },
-  { id:'gen-10', bereich:'Technik/Elektro', gefahr:'Bewegliche Bühnentechnik (Drehbühne, Hubpodien)', massnahme:'T: Quetschkantenschutz, Not-Aus · O: Bedienung nur durch eingewiesenes Personal, Bereich sichern', e:2, s:3, re:1, rs:3 },
+  /* ---- Technik / Bühne ---- */
+  { id:'k-08', bereich:'Technik/Bühne', gefahr:'Bewegliche Bühnentechnik (Drehbühne, Hubpodien)', massnahme:'T: Quetschkantenschutz, Not-Aus · O: Bedienung nur durch eingewiesenes Personal, Bereich sichern', e:2, s:3, re:1, rs:3 },
+  { id:'k-09', bereich:'Technik/Bühne', gefahr:'Bühne/Medientechnik/Rigging über Publikum', massnahme:'T: Sekundärsicherung, statischer Nachweis · O: geprüfte Lasten, Sperrbereiche bei Montage', e:2, s:4, re:1, rs:4 },
+  { id:'k-10', bereich:'Technik/Bühne', gefahr:'Ausfall Dolmetsch-/Medientechnik (internat. Kongress)', massnahme:'T: Redundanz, Ersatzgeräte · O: Technik-Standby, Notfallablauf', e:2, s:2, re:1, rs:2 },
+  { id:'k-11', bereich:'Technik/Bühne', gefahr:'Sturz von Podest/Rednerbühne (auch Teilnehmer)', massnahme:'T: Geländer/Kantenmarkierung, rutschhemmend · O: Beleuchtung, Einweisung', e:2, s:3, re:1, rs:3 },
 
-  { id:'gen-11', bereich:'Brandschutz', gefahr:'Entstehungsbrand / Brandlast (Deko & Aufbauten)', massnahme:'S: schwerentflammbare Materialien (B1) · T: Brandlast reduzieren · O: B1-Nachweis, Brandwache', e:2, s:4, re:1, rs:4 },
-  { id:'gen-12', bereich:'Brandschutz', gefahr:'Pyrotechnik / offene Flamme / Laser / Nebel', massnahme:'S: Verzicht/Alternative · O: Genehmigung, befähigte Person, Brandsicherheitswache, Abstände · T: Nebel mit BMA/ELA abstimmen', e:2, s:4, re:1, rs:3 },
-  { id:'gen-13', bereich:'Brandschutz', gefahr:'Verstellte/abgeschaltete Brandschutzeinrichtungen (BMA, Hydranten)', massnahme:'O: Freihaltung BMA/Hydranten/Feuerlöscher, Kontrolle, keine BMA-Abschaltung ohne Ersatzmaßnahme', e:2, s:4, re:1, rs:4 },
+  /* ---- Strom / Energie ---- */
+  { id:'k-12', bereich:'Strom/Energie', gefahr:'Elektrische Gefährdung (Provisorien, Kabeltrassen)', massnahme:'T: RCD/FI-Schutz, geprüfte Betriebsmittel · O: Elektrofachkraft, DGUV-V3-Prüfung', e:3, s:3, re:1, rs:3 },
+  { id:'k-13', bereich:'Strom/Energie', gefahr:'Überlast / Kabelbrand Mehrfachverteiler', massnahme:'T: ausreichend dimensionierte Verteilung, Absicherung · O: Lastverteilung, keine Kaskadierung', e:2, s:3, re:1, rs:3 },
+  { id:'k-14', bereich:'Strom/Energie', gefahr:'Stromausfall sicherheitsrelevanter Technik (Betrieb/Session)', massnahme:'T: Netzersatz/USV für sicherheitsrelevante Technik · O: Notfallplan, Durchsagekonzept, Programmunterbrechung', e:2, s:3, re:1, rs:3 },
+  { id:'k-15', bereich:'Strom/Energie', gefahr:'Ausfall Sicherheitsstromversorgung / Notstrom / USV', massnahme:'T: redundante USV, Sicherheitsbeleuchtung mit Batterie · O: Wartung, Funktionsprüfung vor Veranstaltung', e:2, s:4, re:1, rs:4 },
+  { id:'k-16', bereich:'Strom/Energie', gefahr:'Aggregat/Generator (Abgase, Betankung, Lärm)', massnahme:'T: Aufstellung im Freien mit Abstand, Abgasführung, Erdung · O: Betankung nur bei Stillstand, Brandschutz · P: Gehörschutz', e:2, s:3, re:1, rs:2 },
 
-  { id:'gen-14', bereich:'Flucht/Rettung', gefahr:'Verstellte/unzureichende Flucht- und Rettungswege', massnahme:'O: Fluchtwege/Notausgänge freihalten, regelmäßige Kontrolle, Bestuhlungsplan einhalten', e:3, s:4, re:1, rs:4 },
-  { id:'gen-15', bereich:'Flucht/Rettung', gefahr:'Ausfall Sicherheits-/Notbeleuchtung/Kennzeichnung', massnahme:'T: Sicherheitsbeleuchtung mit Notstrom, geprüft · O: Funktionsprüfung vor Veranstaltung', e:2, s:3, re:1, rs:3 },
-  { id:'gen-16', bereich:'Flucht/Rettung', gefahr:'Blockierte Feuerwehr-/Rettungszufahrten', massnahme:'O: Zufahrten/Aufstellflächen freihalten, Beschilderung, Abschleppregelung', e:2, s:4, re:1, rs:4 },
+  /* ---- Brandschutz ---- */
+  { id:'k-17', bereich:'Brandschutz', gefahr:'Entstehungsbrand / Brandlast (Deko & Aufbauten)', massnahme:'S: schwerentflammbare Materialien (B1) · T: Brandlast reduzieren · O: B1-Nachweis, Brandwache', e:2, s:4, re:1, rs:4 },
+  { id:'k-18', bereich:'Brandschutz', gefahr:'Pyrotechnik / offene Flamme / Laser / Nebel', massnahme:'S: Verzicht/Alternative · O: Genehmigung, befähigte Person, Brandsicherheitswache, Abstände · T: Nebel mit BMA/ELA abstimmen', e:2, s:4, re:1, rs:3 },
+  { id:'k-19', bereich:'Brandschutz', gefahr:'Verstellte/abgeschaltete Brandschutzeinrichtungen (BMA, Hydranten)', massnahme:'O: Freihaltung BMA/Hydranten/Feuerlöscher, Kontrolle, keine BMA-Abschaltung ohne Ersatzmaßnahme', e:2, s:4, re:1, rs:4 },
+  { id:'k-20', bereich:'Brandschutz', gefahr:'Brandlast Messestände / Ausstellung im Foyer', massnahme:'S: B1-Materialien · O: B1-Nachweis Standbau, Standabnahme, Brandwache · T: Wege freihalten', e:2, s:4, re:1, rs:4 },
+  { id:'k-21', bereich:'Brandschutz', gefahr:'Dekobeleuchtung / Kerzen / Heizstrahler (Abendevent)', massnahme:'S: LED statt offener Flamme · O: Abstände, Brandwache · T: standsichere Heizstrahler mit Abstand', e:2, s:3, re:1, rs:3 },
 
-  { id:'gen-17', bereich:'Personenströme', gefahr:'Gedränge / Engstellen im Personenstrom', massnahme:'T: breitere Wegeführung, Leitsystem · O: Personenstromlenkung, Ordnungsdienst, Kapazitätssteuerung', e:3, s:3, re:2, rs:3 },
-  { id:'gen-18', bereich:'Personenströme', gefahr:'Überschreitung zugelassener Personenzahl (gesamt)', massnahme:'O: Einlasszählung, genehmigte Höchstzahl, Einlassstopp · T: Zählsystem', e:2, s:4, re:1, rs:4 },
-  { id:'gen-19', bereich:'Personenströme', gefahr:'Überfüllung einzelner Säle/Räume über genehmigte Zahl', massnahme:'O: saalbezogene Höchstzahl, Einlasszählung/-stopp, Personal an Saaltüren · T: Alternativräume/Streaming', e:3, s:4, re:1, rs:4 },
-  { id:'gen-20', bereich:'Personenströme', gefahr:'Panik / unkontrollierte Massenbewegung', massnahme:'O: Personenstrommanagement, klare Durchsagen, geschultes Personal, Räumungskonzept · T: ELA', e:1, s:4, re:1, rs:4 },
+  /* ---- Flucht / Rettung ---- */
+  { id:'k-22', bereich:'Flucht/Rettung', gefahr:'Verstellte/unzureichende Flucht- und Rettungswege', massnahme:'O: Fluchtwege/Notausgänge freihalten, regelmäßige Kontrolle, Bestuhlungsplan einhalten', e:3, s:4, re:1, rs:4 },
+  { id:'k-23', bereich:'Flucht/Rettung', gefahr:'Ausfall Sicherheits-/Notbeleuchtung/Kennzeichnung', massnahme:'T: Sicherheitsbeleuchtung mit Notstrom, geprüft · O: Funktionsprüfung vor Veranstaltung', e:2, s:3, re:1, rs:3 },
+  { id:'k-24', bereich:'Flucht/Rettung', gefahr:'Blockierte Feuerwehr-/Rettungszufahrten', massnahme:'O: Zufahrten/Aufstellflächen freihalten, Beschilderung, Abschleppregelung', e:2, s:4, re:1, rs:4 },
+  { id:'k-25', bereich:'Flucht/Rettung', gefahr:'Entfluchtung bestuhlter Säle (Reihen-/Blockbestuhlung)', massnahme:'T: Bestuhlungsplan nach Gangbreiten/Reihenabständen · O: Genehmigung, Räumungshelfer, Wege frei', e:2, s:4, re:1, rs:4 },
+  { id:'k-26', bereich:'Flucht/Rettung', gefahr:'Räumung über mehrere Ebenen / Aufzüge im Brandfall', massnahme:'O: Räumungskonzept (Aufzüge nicht nutzen), Treppenraumlenkung, Räumungshelfer · T: ELA-Durchsagen', e:2, s:4, re:1, rs:4 },
 
-  { id:'gen-21', bereich:'Beschäftigte', gefahr:'Lärm (Beschallung, Aufbau)', massnahme:'T: Lärmminderung, Abschirmung · O: Expositionszeiten begrenzen · P: Gehörschutz', e:3, s:2, re:2, rs:2 },
-  { id:'gen-22', bereich:'Beschäftigte', gefahr:'Heben/Tragen schwerer Lasten', massnahme:'T: Hebe-/Transporthilfen · O: Unterweisung ergonomisches Heben, Teamarbeit', e:3, s:2, re:2, rs:2 },
-  { id:'gen-23', bereich:'Beschäftigte', gefahr:'Psychische Belastung (Zeitdruck, Nacht-/Schichtarbeit)', massnahme:'O: realistische Zeitplanung, Pausen, Schichtgestaltung, ausreichend Personal', e:3, s:2, re:2, rs:2 },
-  { id:'gen-24', bereich:'Beschäftigte', gefahr:'Hitze / Kälte / Zugluft', massnahme:'T: Heizung/Lüftung, Wetterschutz · O: Getränke, Pausen · P: witterungsgerechte Kleidung', e:3, s:2, re:2, rs:1 },
+  /* ---- Personenströme ---- */
+  { id:'k-27', bereich:'Personenströme', gefahr:'Gedränge / Engstellen im Personenstrom', massnahme:'T: breitere Wegeführung, Leitsystem · O: Personenstromlenkung, Ordnungsdienst, Kapazitätssteuerung', e:3, s:3, re:2, rs:3 },
+  { id:'k-28', bereich:'Personenströme', gefahr:'Überschreitung zugelassener Personenzahl (gesamt)', massnahme:'O: Einlasszählung, genehmigte Höchstzahl, Einlassstopp · T: Zählsystem', e:2, s:4, re:1, rs:4 },
+  { id:'k-29', bereich:'Personenströme', gefahr:'Überfüllung einzelner Säle/Räume (z. B. beliebte Keynote)', massnahme:'O: saalbezogene Höchstzahl, Einlasszählung/-stopp, Personal an Saaltüren · T: Alternativräume/Streaming', e:3, s:4, re:1, rs:4 },
+  { id:'k-30', bereich:'Personenströme', gefahr:'Panik / unkontrollierte Massenbewegung', massnahme:'O: Personenstrommanagement, klare Durchsagen, geschultes Personal, Räumungskonzept · T: ELA', e:1, s:4, re:1, rs:4 },
+  { id:'k-31', bereich:'Personenströme', gefahr:'Stau in Foyers bei Pausen / Sessionwechsel', massnahme:'O: entzerrte Pausen-/Sessionzeiten, Wegeführung · T: breite Verkehrsflächen, Leitsystem', e:3, s:2, re:2, rs:2 },
+  { id:'k-32', bereich:'Personenströme', gefahr:'Rückstau bei Einlass / Registrierung', massnahme:'T: ausreichend Einlassspuren/Scanner · O: Zeitfenster-Einlass, Wartezonen, Personal', e:3, s:2, re:2, rs:1 },
+  { id:'k-33', bereich:'Personenströme', gefahr:'Andrang an Garderobe / Catering-Ausgabe', massnahme:'T: dezentrale Ausgaben, ausreichende Kapazität · O: Personalsteuerung, Wegeführung', e:3, s:1, re:2, rs:1 },
 
-  { id:'gen-25', bereich:'Außen/Witterung', gefahr:'Witterung: Wind/Sturm/Last auf Zelten/Bühnen', massnahme:'S: Verzicht auf Außenaufbau · T: Ballastierung, Verankerung · O: Windlast-/Abbruchkriterien, Wettermonitoring', e:2, s:4, re:1, rs:4 },
-  { id:'gen-26', bereich:'Außen/Witterung', gefahr:'Rutsch-/Sturzgefahr (Nässe, Schnee, Glätte)', massnahme:'T: rutschhemmende Beläge, Abstreifer · O: Räum-/Streudienst, Markierung', e:3, s:2, re:2, rs:2 },
+  /* ---- Zutritt / Sicherheit ---- */
+  { id:'k-34', bereich:'Zutritt/Sicherheit', gefahr:'Unbefugter Zutritt / Umgehung der Akkreditierung', massnahme:'T: Akkreditierungssystem/Badges, Vereinzelung · O: Zutrittskontrolle, Ordnungsdienst, Zonenkonzept', e:3, s:3, re:1, rs:3 },
+  { id:'k-35', bereich:'Zutritt/Sicherheit', gefahr:'Personenschutz exponierter Teilnehmer (VIP/Regierung)', massnahme:'O: Abstimmung mit Polizei/Personenschützern, gesicherte Zonen und Routen · T: bauliche Sicherung', e:2, s:4, re:1, rs:4 },
+  { id:'k-36', bereich:'Zutritt/Sicherheit', gefahr:'Einbringen gefährlicher Gegenstände', massnahme:'O: Einlass-/Taschenkontrolle nach Hausrecht · T: Detektionstechnik', e:2, s:4, re:1, rs:4 },
+  { id:'k-37', bereich:'Zutritt/Sicherheit', gefahr:'Protest / Demonstration / Aktionen', massnahme:'O: Lagebild, Abstimmung Polizei, Deeskalation, Eingänge/Zufahrten sichern', e:2, s:3, re:1, rs:3 },
 
-  { id:'gen-27', bereich:'Logistik/Verkehr', gefahr:'Anfahren durch Stapler/Hubwagen', massnahme:'T: getrennte Verkehrs-/Fußwege · O: Verkehrsregelung, Einweiser · P: Warnkleidung', e:3, s:3, re:1, rs:3 },
-  { id:'gen-28', bereich:'Logistik/Verkehr', gefahr:'Gefährdung in Ladezone / beim Rangieren', massnahme:'O: gesicherte Ladezone, Einweiser, Rückfahrwarnung · T: Abstützung/Ladungssicherung', e:2, s:3, re:1, rs:3 },
+  /* ---- Messe / Ausstellung ---- */
+  { id:'k-38', bereich:'Messe/Ausstellung', gefahr:'Standbau ohne Abnahme / Statik Doppelstockstand', massnahme:'O: Standbaurichtlinien, Genehmigung & Statiknachweis für Sonderbauten/Doppelstock, Standabnahme vor Eröffnung', e:2, s:4, re:1, rs:4 },
+  { id:'k-39', bereich:'Messe/Ausstellung', gefahr:'Vorführungen/Maschinen am Stand (bewegte Teile)', massnahme:'T: CE-Schutzeinrichtungen, Not-Aus · O: Absperrung Publikum, Aufsicht durch eingewiesenes Personal', e:2, s:3, re:1, rs:3 },
+  { id:'k-40', bereich:'Messe/Ausstellung', gefahr:'Gasflaschen / Druckbehälter / Druckluft am Stand', massnahme:'O: Genehmigung & Mengenbegrenzung, Sicherung gegen Umfallen, Dichtheitsprüfung · T: Abstand zu Zündquellen', e:2, s:4, re:1, rs:3 },
 
-  { id:'gen-29', bereich:'Gefahrstoffe', gefahr:'Nebelfluid / Reinigungsmittel / Treibstoff', massnahme:'S: Ersatzstoffe · O: Sicherheitsdatenblätter, sichere Lagerung, Lüftung · P: ggf. Handschutz', e:2, s:2, re:1, rs:2 },
+  /* ---- Catering / Hygiene ---- */
+  { id:'k-41', bereich:'Catering/Hygiene', gefahr:'Catering: Rutschgefahr / Allergene / Hygiene', massnahme:'O: HACCP, Allergenkennzeichnung, Reinigung · T: rutschhemmende Beläge', e:3, s:2, re:2, rs:2 },
+  { id:'k-42', bereich:'Catering/Hygiene', gefahr:'Lebensmittelvergiftung / Kühlkettenunterbrechung', massnahme:'O: HACCP, Kühlkettenkontrolle, Rückstellproben, zertifizierter Caterer', e:1, s:3, re:1, rs:3 },
+  { id:'k-43', bereich:'Catering/Hygiene', gefahr:'Alkoholbedingte Vorfälle', massnahme:'O: Ausschankregeln, kein Ausschank an erkennbar Betrunkene, Ordnungsdienst, alkoholfreie Alternativen', e:2, s:2, re:1, rs:2 },
 
-  { id:'gen-30', bereich:'Notfall/Gefahrenabwehr', gefahr:'Medizinischer Notfall / MANV', massnahme:'O: Sanitätsdienst vor Ort, Alarmierungskette, RTW-Zufahrt frei · T: AED bereitstellen', e:3, s:3, re:2, rs:3 },
-  { id:'gen-31', bereich:'Notfall/Gefahrenabwehr', gefahr:'Stromausfall sicherheitsrelevanter Technik', massnahme:'T: Netzersatz/USV für sicherheitsrelevante Technik · O: Notfallplan, Durchsagekonzept', e:2, s:3, re:1, rs:3 },
-  { id:'gen-32', bereich:'Notfall/Gefahrenabwehr', gefahr:'Bedrohung / Bombendrohung / unbefugter Zutritt', massnahme:'O: Zutritts-/Einlasskontrolle, Schulung, Notfallplan mit Polizei · T: Detektion/Absperrung', e:2, s:4, re:1, rs:4 }
+  /* ---- Beschäftigte ---- */
+  { id:'k-44', bereich:'Beschäftigte', gefahr:'Lärm (Beschallung, Aufbau)', massnahme:'T: Lärmminderung, Abschirmung · O: Expositionszeiten begrenzen · P: Gehörschutz', e:3, s:2, re:2, rs:2 },
+  { id:'k-45', bereich:'Beschäftigte', gefahr:'Heben/Tragen schwerer Lasten', massnahme:'T: Hebe-/Transporthilfen · O: Unterweisung ergonomisches Heben, Teamarbeit', e:3, s:2, re:2, rs:2 },
+  { id:'k-46', bereich:'Beschäftigte', gefahr:'Psychische Belastung (Zeitdruck, Nacht-/Schichtarbeit)', massnahme:'O: realistische Zeitplanung, Pausen, Schichtgestaltung, ausreichend Personal', e:3, s:2, re:2, rs:2 },
+  { id:'k-47', bereich:'Beschäftigte', gefahr:'Hitze / Kälte / Zugluft', massnahme:'T: Heizung/Lüftung, Wetterschutz · O: Getränke, Pausen · P: witterungsgerechte Kleidung', e:3, s:2, re:2, rs:1 },
+  { id:'k-48', bereich:'Beschäftigte', gefahr:'Belastung Stand-/Servicepersonal (Stehen, Lärm, Stress)', massnahme:'O: Pausen, Schichtwechsel, Sitzgelegenheiten · T: Lärmminderung', e:3, s:1, re:2, rs:1 },
+
+  /* ---- Außen / Witterung ---- */
+  { id:'k-49', bereich:'Außen/Witterung', gefahr:'Witterung: Wind/Sturm/Last auf Zelten/Bühnen', massnahme:'S: Verzicht auf Außenaufbau · T: Ballastierung, Verankerung · O: Windlast-/Abbruchkriterien, Wettermonitoring', e:2, s:4, re:1, rs:4 },
+  { id:'k-50', bereich:'Außen/Witterung', gefahr:'Rutsch-/Sturzgefahr (Nässe, Schnee, Glätte)', massnahme:'T: rutschhemmende Beläge, Abstreifer · O: Räum-/Streudienst, Markierung', e:3, s:2, re:2, rs:2 },
+
+  /* ---- Logistik / Verkehr ---- */
+  { id:'k-51', bereich:'Logistik/Verkehr', gefahr:'Anfahren durch Stapler/Hubwagen', massnahme:'T: getrennte Verkehrs-/Fußwege · O: Verkehrsregelung, Einweiser · P: Warnkleidung', e:3, s:3, re:1, rs:3 },
+  { id:'k-52', bereich:'Logistik/Verkehr', gefahr:'Gefährdung in Ladezone / beim Rangieren', massnahme:'O: gesicherte Ladezone, Einweiser, Rückfahrwarnung · T: Abstützung/Ladungssicherung', e:2, s:3, re:1, rs:3 },
+
+  /* ---- Gefahrstoffe ---- */
+  { id:'k-53', bereich:'Gefahrstoffe', gefahr:'Nebelfluid / Reinigungsmittel / Treibstoff', massnahme:'S: Ersatzstoffe · O: Sicherheitsdatenblätter, sichere Lagerung, Lüftung · P: ggf. Handschutz', e:2, s:2, re:1, rs:2 },
+
+  /* ---- Inklusion ---- */
+  { id:'k-54', bereich:'Inklusion', gefahr:'Mobilitätseingeschränkte Personen bei Räumung', massnahme:'O: Evakuierungshelfer, Sammelpunkte, Buddy-System · T: Evakuierungsstühle, barrierefreie Wege', e:2, s:4, re:1, rs:3 },
+
+  /* ---- Notfall / Gefahrenabwehr ---- */
+  { id:'k-55', bereich:'Notfall/Gefahrenabwehr', gefahr:'Medizinischer Notfall / MANV', massnahme:'O: Sanitätsdienst vor Ort, AED-Standorte, Alarmierungskette, RTW-Zufahrt frei · T: AED bereitstellen', e:3, s:3, re:2, rs:3 },
+  { id:'k-56', bereich:'Notfall/Gefahrenabwehr', gefahr:'Unzureichende Alarmierung / Räumungsdurchsage', massnahme:'T: ELA/Sprachalarmierung flächendeckend, geprüft · O: vorbereitete, mehrsprachige Durchsagetexte', e:2, s:4, re:1, rs:4 },
+  { id:'k-57', bereich:'Notfall/Gefahrenabwehr', gefahr:'Bedrohung / Bombendrohung / Angriff', massnahme:'O: Zutritts-/Einlasskontrolle, Schulung, Notfallplan mit Polizei · T: Detektion/Absperrung', e:2, s:4, re:1, rs:4 },
+  { id:'k-58', bereich:'Notfall/Gefahrenabwehr', gefahr:'Ausfall Ticketing/IT/WLAN mit Stau-/Sicherheitsfolge', massnahme:'T: Redundanz, Offline-Fallback · O: manuelle Einlassprozesse, Kommunikationsplan', e:2, s:2, re:1, rs:2 }
 ];
-
-/* ------------------------------------------------------------
-   Standardkatalog "Kongress / Tagung"
-   ------------------------------------------------------------ */
-const KATALOG_KONGRESS = [
-  { id:'kon-1',  bereich:'Zutritt/Sicherheit', gefahr:'Unbefugter Zutritt / Umgehung der Akkreditierung (B2G)', massnahme:'T: Akkreditierungssystem/Badges, Vereinzelung · O: Zutrittskontrolle, Ordnungsdienst, Zonenkonzept', e:3, s:3, re:1, rs:3 },
-  { id:'kon-2',  bereich:'Zutritt/Sicherheit', gefahr:'Personenschutz exponierter Teilnehmer (Regierung)', massnahme:'O: Abstimmung mit Polizei/Personenschützern, gesicherte Zonen und Routen · T: bauliche Sicherung', e:2, s:4, re:1, rs:4 },
-  { id:'kon-3',  bereich:'Zutritt/Sicherheit', gefahr:'Einbringen gefährlicher Gegenstände', massnahme:'O: Einlass-/Taschenkontrolle nach Hausrecht · T: Detektionstechnik', e:2, s:4, re:1, rs:4 },
-  { id:'kon-4',  bereich:'Zutritt/Sicherheit', gefahr:'Protest / Demonstration / Aktionen', massnahme:'O: Lagebild, Abstimmung Polizei, Deeskalation, Eingänge/Zufahrten sichern', e:2, s:3, re:1, rs:3 },
-
-  { id:'kon-5',  bereich:'Flucht/Rettung', gefahr:'Entfluchtung bestuhlter Säle (Reihen-/Blockbestuhlung)', massnahme:'T: Bestuhlungsplan nach Gangbreiten/Reihenabständen · O: Genehmigung, Räumungshelfer, Wege frei', e:2, s:4, re:1, rs:4 },
-  { id:'kon-6',  bereich:'Inklusion', gefahr:'Mobilitätseingeschränkte Personen bei Räumung', massnahme:'O: Evakuierungshelfer, Sammelpunkte, Buddy-System · T: Evakuierungsstühle, barrierefreie Wege', e:2, s:4, re:1, rs:3 },
-  { id:'kon-7',  bereich:'Flucht/Rettung', gefahr:'Räumung über mehrere Ebenen / Aufzüge im Brandfall', massnahme:'O: Räumungskonzept (Aufzüge nicht nutzen), Treppenraumlenkung, Räumungshelfer · T: ELA-Durchsagen', e:2, s:4, re:1, rs:4 },
-
-  { id:'kon-8',  bereich:'Personenströme', gefahr:'Überfüllung einzelner Säle bei beliebten Keynotes', massnahme:'O: saalbezogene Höchstzahl, Einlasszählung/-stopp, Personal an Saaltüren · T: Alternativräume/Streaming', e:3, s:4, re:1, rs:4 },
-  { id:'kon-9',  bereich:'Personenströme', gefahr:'Stau in Foyers bei Pausen / Sessionwechsel', massnahme:'O: entzerrte Pausen-/Sessionzeiten, Wegeführung · T: breite Verkehrsflächen, Leitsystem', e:3, s:2, re:2, rs:2 },
-  { id:'kon-10', bereich:'Personenströme', gefahr:'Rückstau bei Einlass / Registrierung', massnahme:'T: ausreichend Einlassspuren/Scanner · O: Zeitfenster-Einlass, Wartezonen, Personal', e:3, s:2, re:2, rs:1 },
-  { id:'kon-11', bereich:'Personenströme', gefahr:'Andrang an Garderobe / Catering-Ausgabe', massnahme:'T: dezentrale Ausgaben, ausreichende Kapazität · O: Personalsteuerung, Wegeführung', e:3, s:1, re:2, rs:1 },
-
-  { id:'kon-12', bereich:'Brandschutz', gefahr:'Brandlast Messestände / Ausstellung im Foyer', massnahme:'S: B1-Materialien · O: B1-Nachweis Standbau, Standabnahme, Brandwache · T: Wege freihalten', e:2, s:4, re:1, rs:4 },
-  { id:'kon-13', bereich:'Brandschutz', gefahr:'Dekobeleuchtung / Kerzen / Heizstrahler (Abendevent)', massnahme:'S: LED statt offener Flamme · O: Abstände, Brandwache · T: standsichere Heizstrahler mit Abstand', e:2, s:3, re:1, rs:3 },
-
-  { id:'kon-14', bereich:'Technik/Bühne', gefahr:'Bühne/Medientechnik/Rigging über Publikum', massnahme:'T: Sekundärsicherung, statischer Nachweis · O: geprüfte Lasten, Sperrbereiche bei Montage', e:2, s:4, re:1, rs:4 },
-  { id:'kon-15', bereich:'Technik/Bühne', gefahr:'Ausfall Dolmetsch-/Medientechnik (internat. Kongress)', massnahme:'T: Redundanz, Ersatzgeräte · O: Technik-Standby, Notfallablauf', e:2, s:2, re:1, rs:2 },
-  { id:'kon-16', bereich:'Technik/Bühne', gefahr:'Sturz von Podest/Rednerbühne (auch Teilnehmer)', massnahme:'T: Geländer/Kantenmarkierung, rutschhemmend · O: Beleuchtung, Einweisung', e:2, s:3, re:1, rs:3 },
-
-  { id:'kon-17', bereich:'Catering/Hygiene', gefahr:'Catering: Rutschgefahr / Allergene / Hygiene', massnahme:'O: HACCP, Allergenkennzeichnung, Reinigung · T: rutschhemmende Beläge', e:3, s:2, re:2, rs:2 },
-  { id:'kon-18', bereich:'Catering/Hygiene', gefahr:'Lebensmittelvergiftung / Kühlkettenunterbrechung', massnahme:'O: HACCP, Kühlkettenkontrolle, Rückstellproben, zertifizierter Caterer', e:1, s:3, re:1, rs:3 },
-  { id:'kon-19', bereich:'Catering/Hygiene', gefahr:'Alkoholbedingte Vorfälle', massnahme:'O: Ausschankregeln, kein Ausschank an erkennbar Betrunkene, Ordnungsdienst, alkoholfreie Alternativen', e:2, s:2, re:1, rs:2 },
-
-  { id:'kon-20', bereich:'Beschäftigte', gefahr:'Belastung Stand-/Servicepersonal (Stehen, Lärm, Stress)', massnahme:'O: Pausen, Schichtwechsel, Sitzgelegenheiten · T: Lärmminderung', e:3, s:1, re:2, rs:1 },
-
-  { id:'kon-21', bereich:'Notfall/Gefahrenabwehr', gefahr:'Unzureichende Alarmierung / Räumungsdurchsage', massnahme:'T: ELA/Sprachalarmierung flächendeckend, geprüft · O: vorbereitete, mehrsprachige Durchsagetexte', e:2, s:4, re:1, rs:4 },
-  { id:'kon-22', bereich:'Notfall/Gefahrenabwehr', gefahr:'Medizinischer Notfall (älteres Fachpublikum)', massnahme:'O: Sanitätsdienst, AED-Standorte, Alarmierungskette · T: AED bereitstellen', e:3, s:3, re:2, rs:3 },
-  { id:'kon-23', bereich:'Notfall/Gefahrenabwehr', gefahr:'Stromausfall während einer Session', massnahme:'T: USV/Netzersatz für sicherheitsrelevante Technik · O: Notfalldurchsage, Programmunterbrechung', e:2, s:3, re:1, rs:3 },
-  { id:'kon-24', bereich:'Notfall/Gefahrenabwehr', gefahr:'Ausfall Ticketing/IT/WLAN mit Stau-/Sicherheitsfolge', massnahme:'T: Redundanz, Offline-Fallback · O: manuelle Einlassprozesse, Kommunikationsplan', e:2, s:2, re:1, rs:2 }
-];
-
-const KATALOGE = { generisch: KATALOG_GENERISCH, kongress: KATALOG_KONGRESS };
 
 /* ------------------------------------------------------------
    Konzept-Formulardefinitionen (Felder mit Platzhaltern)
@@ -170,13 +180,11 @@ let state = null;
 
 function defaultState() {
   return {
-    version: 1,
+    version: 2,
     meta: { veranstaltung:'', ort:'', datum:'', besucher:'', ersteller:'', stand:'' },
-    activeCatalog: 'generisch',
-    loadedCatalogs: ['generisch'],
     activeTab: 'gefaehrdung',
     filterBereich: 'alle',
-    gefaehrdungen: KATALOG_GENERISCH.map(toGefItem),
+    gefaehrdungen: KATALOG.map(toGefItem),
     concepts: { ordnungsdienst:{}, sanitaetsdienst:{}, brandschutz:{} },
     notfall: NOTFALL_DEFAULT.map(n => ({ ...n }))
   };
@@ -185,7 +193,7 @@ function defaultState() {
 /* Katalogeintrag -> Arbeitsobjekt */
 function toGefItem(c) {
   return {
-    id: c.id, catalog: c.id.startsWith('kon-') ? 'kongress' : 'generisch',
+    id: c.id, catalog: 'katalog',
     bereich: c.bereich, gefahr: c.gefahr, massnahme: c.massnahme,
     e: c.e, s: c.s, re: c.re, rs: c.rs,
     verantwortlich: '', erledigt: false, vorschlag: true
@@ -212,17 +220,18 @@ function loadState() {
   }
 }
 
-/* defensiv: fehlende Felder ergänzen */
+/* defensiv: fehlende Felder ergänzen.
+   Altstände (version 1, getrennte Kataloge) werden auf den
+   zusammengeführten Katalog migriert. */
 function mergeState(p) {
   const d = defaultState();
+  const migriert = !p.version || p.version < 2 || !Array.isArray(p.gefaehrdungen);
   return {
-    version: 1,
+    version: 2,
     meta: Object.assign(d.meta, p.meta || {}),
-    activeCatalog: p.activeCatalog || 'generisch',
-    loadedCatalogs: Array.isArray(p.loadedCatalogs) && p.loadedCatalogs.length ? p.loadedCatalogs : ['generisch'],
     activeTab: p.activeTab || 'gefaehrdung',
     filterBereich: p.filterBereich || 'alle',
-    gefaehrdungen: Array.isArray(p.gefaehrdungen) ? p.gefaehrdungen : d.gefaehrdungen,
+    gefaehrdungen: migriert ? d.gefaehrdungen : p.gefaehrdungen,
     concepts: Object.assign({ ordnungsdienst:{}, sanitaetsdienst:{}, brandschutz:{} }, p.concepts || {}),
     notfall: Array.isArray(p.notfall) ? p.notfall : d.notfall
   };
@@ -251,9 +260,9 @@ function riskLabel(v) {
   return 'sehr hoch';
 }
 
-/* sichtbare Gefährdungen = aktiver Katalog + eigene Einträge */
+/* sichtbare Gefährdungen = der gesamte (zusammengeführte) Bestand */
 function visibleGef() {
-  return state.gefaehrdungen.filter(g => g.catalog === state.activeCatalog || g.catalog === 'custom');
+  return state.gefaehrdungen;
 }
 
 /* ============================================================
@@ -438,12 +447,6 @@ function renderMeta() {
   document.getElementById('meta-stand').value = state.meta.stand;
 }
 
-function renderCatalogButtons() {
-  document.querySelectorAll('.catalog-btn').forEach(b => {
-    b.classList.toggle('is-active', b.dataset.catalog === state.activeCatalog);
-  });
-}
-
 /* zentraler Re-Render der Gefährdungs-relevanten Teile */
 function renderGefAll() {
   renderFilterBar();
@@ -454,7 +457,6 @@ function renderGefAll() {
 
 function renderAll() {
   renderMeta();
-  renderCatalogButtons();
   renderGefAll();
   renderMatrix();
   renderForms();
@@ -481,23 +483,6 @@ function setActiveTab(tab, save=true) {
    Mutationen
    ============================================================ */
 function findGef(id) { return state.gefaehrdungen.find(g => g.id === id); }
-
-function ensureCatalogLoaded(key) {
-  if (state.loadedCatalogs.includes(key)) return;
-  const items = (KATALOGE[key] || []).map(toGefItem);
-  state.gefaehrdungen = state.gefaehrdungen.concat(items);
-  state.loadedCatalogs.push(key);
-}
-
-function switchCatalog(key) {
-  if (!KATALOGE[key]) return;
-  ensureCatalogLoaded(key);
-  state.activeCatalog = key;
-  state.filterBereich = 'alle';
-  renderCatalogButtons();
-  renderGefAll();
-  saveState();
-}
 
 function addGefRow() {
   const item = {
@@ -611,12 +596,6 @@ function bindEvents() {
     };
     const field = map[e.target.id];
     if (field) { state.meta[field] = e.target.value; saveState(); }
-  });
-
-  // Katalog-Umschaltung
-  document.querySelector('.catalog-switch').addEventListener('click', e => {
-    const btn = e.target.closest('.catalog-btn');
-    if (btn) switchCatalog(btn.dataset.catalog);
   });
 
   // Filterchips
