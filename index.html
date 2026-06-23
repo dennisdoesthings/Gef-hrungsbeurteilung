@@ -16,17 +16,23 @@
         <p class="app-header__sub">Veranstaltungen in Versammlungsstätten — methodische Arbeitsgrundlage</p>
       </div>
     </div>
-    <div class="app-header__actions">
-      <button type="button" class="btn" id="btn-print">Drucken / PDF</button>
-      <button type="button" class="btn" id="btn-export">Export JSON</button>
-      <button type="button" class="btn" id="btn-import">Import JSON</button>
-      <input type="file" id="file-import" accept="application/json,.json" hidden>
-      <button type="button" class="btn btn--danger" id="btn-reset">Zurücksetzen</button>
+    <div class="app-header__right">
+      <img class="app-header__logo" id="brand-logo" src="branding/logo.png" alt="Logo"
+           onerror="this.style.display='none'">
+      <div class="app-header__actions">
+        <button type="button" class="btn" id="btn-print">Drucken / PDF</button>
+        <button type="button" class="btn" id="btn-export">Export JSON</button>
+        <button type="button" class="btn" id="btn-import">Import JSON</button>
+        <input type="file" id="file-import" accept="application/json,.json" hidden>
+        <button type="button" class="btn btn--danger" id="btn-reset">Zurücksetzen</button>
+      </div>
     </div>
   </header>
 
   <!-- Druckkopf (nur im Druck sichtbar) -->
   <div class="print-only print-head">
+    <img class="print-logo" id="print-logo" src="branding/logo.png" alt=""
+         onerror="this.style.display='none'">
     <h1 id="print-title">Gefährdungsbeurteilung &amp; Sicherheitskonzept</h1>
     <p id="print-meta"></p>
   </div>
@@ -43,12 +49,12 @@
     </div>
   </section>
 
-  <!-- Disclaimer -->
+  <!-- Rechtsgrundlagen-Hinweis (kundentauglich) -->
   <div class="disclaimer" role="note">
-    <strong>Hinweis:</strong> Dieses Tool ist eine <em>methodische Arbeitsgrundlage</em> und <strong>kein rechtsverbindliches Dokument</strong>.
-    Konkrete Pflichtinhalte, Personalbemessung (z.&nbsp;B. Sanitätsdienst nach Kölner Algorithmus) und Auflagen ergeben sich aus der
-    jeweiligen Landes-VStättVO, den Sicherheitsrichtlinien des Hauses und der Abstimmung mit den zuständigen Behörden.
-    Rechtsrahmen: §&nbsp;5 ArbSchG (Beschäftigte), §&nbsp;43 VStättVO / Landes-VStättVO (Besucher).
+    <strong>Rechtsgrundlagen:</strong> Diese Gefährdungsbeurteilung wurde nach §&nbsp;5 ArbSchG (Schutz der Beschäftigten)
+    sowie §&nbsp;43 VStättVO / Landes-VStättVO (Schutz der Besucher) erstellt. Personalbemessung
+    (z.&nbsp;B. Sanitätsdienst nach Kölner Algorithmus), konkrete Auflagen und Pflichtinhalte werden mit den
+    Sicherheitsrichtlinien des Hauses und den zuständigen Behörden abgestimmt.
   </div>
 
   <!-- Navigation -->
