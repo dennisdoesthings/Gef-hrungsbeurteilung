@@ -1,0 +1,595 @@
+/* ============================================================
+   Gefährdungsbeurteilung & Sicherheitskonzept
+   Design: behördlich-seriös (Navy), heller Hintergrund,
+           technisch-kompakt (dichte Tabellen, Monospace-Werte)
+   ============================================================ */
+
+:root {
+  --primary:      #1b3a5b;   /* Marineblau */
+  --primary-dark: #122b44;
+  --primary-700:  #244c75;
+  --accent:       #2f6da3;   /* helleres Blau für Aktionen */
+  --accent-soft:  #e8eef4;
+
+  --bg:       #eef1f4;
+  --surface:  #ffffff;
+  --surface-2:#f7f9fb;
+  --border:   #cbd4dd;
+  --border-2: #dfe5ea;
+
+  --text:   #16212b;
+  --muted:  #5a6b78;
+
+  --danger: #9b1c1c;
+
+  /* Risiko-Ampel */
+  --green-bg:#e1f1e2; --green-fg:#1d5e22;
+  --yellow-bg:#fcf3d2; --yellow-fg:#7a5d00;
+  --orange-bg:#ffe2cb; --orange-fg:#a04300;
+  --red-bg:#f9d6d6;    --red-fg:#9b1c1c;
+
+  --mono: "SF Mono","Consolas","Roboto Mono","DejaVu Sans Mono",monospace;
+  --sans: "Inter","Segoe UI",system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif;
+
+  --radius: 4px;
+  --shadow: 0 1px 2px rgba(16,33,43,.08), 0 1px 1px rgba(16,33,43,.06);
+}
+
+* { box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  margin: 0;
+  font-family: var(--sans);
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--text);
+  background: var(--bg);
+}
+
+/* ---------- Fokus-Indikatoren ---------- */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+/* ============================================================
+   Kopf
+   ============================================================ */
+.app-header {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 22px;
+  background: var(--primary);
+  color: #fff;
+}
+.app-header__title { display: flex; align-items: center; gap: 14px; }
+.app-header__mark {
+  font-family: var(--mono);
+  font-weight: 700;
+  font-size: 18px;
+  letter-spacing: 1px;
+  background: #fff;
+  color: var(--primary);
+  width: 40px; height: 40px;
+  display: grid; place-items: center;
+  border-radius: var(--radius);
+}
+.app-header h1 { margin: 0; font-size: 17px; font-weight: 600; letter-spacing: .2px; }
+.app-header__sub { margin: 2px 0 0; font-size: 12px; color: #c4d3e0; }
+.app-header__actions { display: flex; flex-wrap: wrap; gap: 8px; }
+
+/* ============================================================
+   Buttons / Chips
+   ============================================================ */
+.btn {
+  font-family: var(--sans);
+  font-size: 13px;
+  padding: 7px 13px;
+  border: 1px solid rgba(255,255,255,.45);
+  background: rgba(255,255,255,.08);
+  color: #fff;
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: background .12s, border-color .12s;
+}
+.app-header .btn:hover { background: rgba(255,255,255,.2); }
+
+/* Buttons im Hellbereich */
+.controls-row .btn,
+main .btn {
+  color: var(--primary);
+  border: 1px solid var(--border);
+  background: var(--surface);
+}
+.controls-row .btn:hover,
+main .btn:hover { background: var(--accent-soft); }
+
+.btn--primary {
+  background: var(--accent) !important;
+  border-color: var(--accent) !important;
+  color: #fff !important;
+}
+.btn--primary:hover { background: var(--primary-700) !important; }
+
+.btn--danger { border-color: #e6a6a6; }
+.app-header .btn--danger { border-color: rgba(255,200,200,.6); }
+.btn--danger:hover { background: rgba(155,28,28,.18) !important; }
+
+.chip {
+  font-family: var(--sans);
+  font-size: 12.5px;
+  padding: 5px 11px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  border-radius: 20px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.chip:hover { background: var(--accent-soft); }
+.chip.is-active {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #fff;
+}
+.chip .chip-count {
+  font-family: var(--mono);
+  font-size: 11px;
+  opacity: .8;
+  margin-left: 5px;
+}
+
+/* ============================================================
+   Metadaten
+   ============================================================ */
+.meta-bar { padding: 14px 22px; background: var(--surface); border-bottom: 1px solid var(--border); }
+.meta-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 10px 16px;
+}
+.meta-field { display: flex; flex-direction: column; gap: 3px; }
+.meta-field span { font-size: 11px; text-transform: uppercase; letter-spacing: .5px; color: var(--muted); font-weight: 600; }
+.meta-field input {
+  font-family: var(--sans);
+  font-size: 13.5px;
+  padding: 6px 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  color: var(--text);
+}
+
+/* ============================================================
+   Disclaimer
+   ============================================================ */
+.disclaimer {
+  margin: 0;
+  padding: 11px 22px;
+  background: #fbf6e7;
+  border-bottom: 1px solid #ecdfb6;
+  border-left: 4px solid #c9a227;
+  font-size: 12.5px;
+  color: #5c4d18;
+}
+.disclaimer strong { color: #4a3d12; }
+
+/* ============================================================
+   Navigation
+   ============================================================ */
+.app-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  padding: 0 14px;
+  background: var(--primary-dark);
+  position: sticky;
+  top: 0;
+  z-index: 20;
+}
+.tab-btn {
+  font-family: var(--sans);
+  font-size: 13px;
+  font-weight: 500;
+  padding: 11px 14px;
+  border: none;
+  background: transparent;
+  color: #b9c8d6;
+  cursor: pointer;
+  border-bottom: 3px solid transparent;
+}
+.tab-btn:hover { color: #fff; background: rgba(255,255,255,.06); }
+.tab-btn[aria-selected="true"] {
+  color: #fff;
+  border-bottom-color: #5fa8e0;
+  background: rgba(255,255,255,.08);
+}
+
+/* ============================================================
+   Layout / Sektionen
+   ============================================================ */
+main { padding: 18px 22px 40px; max-width: 1500px; margin: 0 auto; }
+.tab-section { display: none; }
+.tab-section.is-active { display: block; }
+
+.section-title {
+  font-size: 18px;
+  margin: 4px 0 14px;
+  color: var(--primary);
+  padding-bottom: 8px;
+  border-bottom: 2px solid var(--border);
+}
+.hint { font-size: 12.5px; color: var(--muted); margin: -6px 0 14px; }
+
+/* ============================================================
+   Info-Boxen (Anleitung / Erklärung)
+   ============================================================ */
+.info-box {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--accent);
+  border-radius: var(--radius);
+  margin-bottom: 12px;
+  box-shadow: var(--shadow);
+}
+.info-box > summary {
+  cursor: pointer;
+  padding: 11px 16px;
+  font-weight: 600;
+  font-size: 13.5px;
+  color: var(--primary);
+  list-style-position: inside;
+}
+.info-box > summary:hover { background: var(--surface-2); }
+.info-box[open] > summary { border-bottom: 1px solid var(--border-2); }
+.info-box .steps,
+.info-box > p { padding: 4px 20px 14px; margin: 8px 0 0; }
+.info-box .steps li { margin-bottom: 6px; }
+.info-box > p { padding-top: 12px; }
+
+/* ============================================================
+   Steuerleiste / Filter
+   ============================================================ */
+.controls-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+.catalog-switch { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.controls-label { font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; }
+
+.filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 14px;
+  padding: 10px;
+  background: var(--surface);
+  border: 1px solid var(--border-2);
+  border-radius: var(--radius);
+}
+
+/* ============================================================
+   Dashboard
+   ============================================================ */
+.dashboard {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 10px;
+  margin-bottom: 16px;
+}
+.dash-card {
+  background: var(--surface);
+  border: 1px solid var(--border-2);
+  border-radius: var(--radius);
+  padding: 12px 14px;
+  box-shadow: var(--shadow);
+}
+.dash-card .dash-num {
+  font-family: var(--mono);
+  font-size: 26px;
+  font-weight: 700;
+  line-height: 1;
+}
+.dash-card .dash-label { font-size: 11.5px; color: var(--muted); margin-top: 5px; }
+.dash-card.is-green  { border-left: 4px solid var(--green-fg); }
+.dash-card.is-yellow { border-left: 4px solid #c9a227; }
+.dash-card.is-orange { border-left: 4px solid var(--orange-fg); }
+.dash-card.is-red    { border-left: 4px solid var(--red-fg); }
+.dash-card.is-open   { border-left: 4px solid var(--primary); background: var(--accent-soft); }
+
+/* ============================================================
+   Tabellen
+   ============================================================ */
+.table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); }
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.data-table thead th {
+  background: var(--primary);
+  color: #fff;
+  font-weight: 600;
+  text-align: left;
+  padding: 9px 10px;
+  font-size: 12px;
+  vertical-align: bottom;
+  position: sticky;
+  top: 0;
+}
+.data-table .th-sub { font-family: var(--mono); font-size: 10px; font-weight: 400; color: #b9c8d6; }
+.data-table tbody td {
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--border-2);
+  vertical-align: top;
+}
+.data-table tbody tr:nth-child(even) { background: var(--surface-2); }
+.data-table tbody tr:hover { background: var(--accent-soft); }
+
+.col-bereich { width: 130px; }
+.col-risk { width: 96px; }
+.col-verant { width: 150px; }
+.col-done { width: 42px; text-align: center; }
+.col-act { width: 34px; }
+
+/* Felder in Tabellen */
+.cell-input, .cell-select {
+  font-family: var(--sans);
+  font-size: 12.5px;
+  width: 100%;
+  padding: 4px 6px;
+  border: 1px solid var(--border-2);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
+}
+.cell-input.is-text { min-height: 30px; }
+textarea.cell-input { resize: vertical; min-height: 48px; line-height: 1.35; }
+
+/* Risiko-Zelle */
+.risk-cell { text-align: center; }
+.risk-selects { display: flex; align-items: center; justify-content: center; gap: 3px; }
+.risk-selects select {
+  font-family: var(--mono);
+  font-size: 12px;
+  padding: 3px 2px 3px 4px;
+  border: 1px solid var(--border-2);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+.risk-selects .mul { color: var(--muted); font-family: var(--mono); }
+.risk-badge {
+  display: inline-block;
+  margin-top: 4px;
+  font-family: var(--mono);
+  font-weight: 700;
+  font-size: 13px;
+  min-width: 30px;
+  padding: 2px 6px;
+  border-radius: 3px;
+}
+.r-green  { background: var(--green-bg);  color: var(--green-fg); }
+.r-yellow { background: var(--yellow-bg); color: var(--yellow-fg); }
+.r-orange { background: var(--orange-bg); color: var(--orange-fg); }
+.r-red    { background: var(--red-bg);    color: var(--red-fg); }
+
+.vorschlag-tag {
+  display: block;
+  font-size: 9.5px;
+  text-transform: uppercase;
+  letter-spacing: .4px;
+  color: var(--muted);
+  margin-top: 2px;
+}
+
+.row-del {
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--danger);
+  border-radius: var(--radius);
+  width: 26px; height: 26px;
+  cursor: pointer;
+  font-size: 15px;
+  line-height: 1;
+}
+.row-del:hover { background: var(--red-bg); }
+
+.done-check { width: 17px; height: 17px; accent-color: var(--primary); cursor: pointer; }
+
+.gefahr-link { font-size: 11px; color: var(--accent); }
+
+/* ============================================================
+   Formulare (Konzept-Reiter)
+   ============================================================ */
+.form-grid { display: grid; gap: 14px; max-width: 980px; }
+.form-field { display: flex; flex-direction: column; gap: 5px; }
+.form-field label { font-weight: 600; font-size: 13px; color: var(--primary); }
+.form-field textarea {
+  font-family: var(--sans);
+  font-size: 13px;
+  line-height: 1.45;
+  padding: 9px 11px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
+  resize: vertical;
+  min-height: 70px;
+}
+.form-field textarea::placeholder { color: #9aa8b3; }
+
+/* ============================================================
+   Notfall-Karten
+   ============================================================ */
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(330px, 1fr));
+  gap: 14px;
+}
+.nf-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-top: 4px solid var(--primary);
+  border-radius: var(--radius);
+  padding: 12px 14px;
+  box-shadow: var(--shadow);
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+.nf-card__head { display: flex; align-items: center; gap: 8px; }
+.nf-card__head input {
+  flex: 1;
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--primary);
+  border: none;
+  border-bottom: 1px solid transparent;
+  background: transparent;
+  padding: 2px 0;
+}
+.nf-card__head input:hover,
+.nf-card__head input:focus { border-bottom-color: var(--border); }
+.nf-field { display: flex; flex-direction: column; gap: 3px; }
+.nf-field label {
+  font-size: 10.5px; text-transform: uppercase; letter-spacing: .5px;
+  font-weight: 600; color: var(--muted);
+}
+.nf-field textarea {
+  font-family: var(--sans);
+  font-size: 12.5px;
+  line-height: 1.4;
+  padding: 6px 8px;
+  border: 1px solid var(--border-2);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  resize: vertical;
+  min-height: 44px;
+}
+
+/* ============================================================
+   Risikomatrix
+   ============================================================ */
+.matrix-block { margin-top: 24px; }
+.matrix-block h3 { font-size: 14px; color: var(--primary); margin-bottom: 10px; }
+.matrix-wrap { overflow-x: auto; }
+.matrix {
+  border-collapse: collapse;
+  font-family: var(--mono);
+  font-size: 13px;
+}
+.matrix th, .matrix td {
+  border: 1px solid var(--border);
+  width: 46px; height: 40px;
+  text-align: center;
+  padding: 0;
+}
+.matrix th { background: var(--surface-2); color: var(--muted); font-weight: 600; font-size: 11px; }
+.matrix caption { caption-side: bottom; font-family: var(--sans); font-size: 11px; color: var(--muted); padding-top: 6px; }
+.matrix .axis-label { font-family: var(--sans); font-size: 10px; letter-spacing: .5px; text-transform: uppercase; }
+.matrix td b { font-weight: 700; }
+
+.matrix-legend {
+  display: flex; flex-wrap: wrap; gap: 14px;
+  list-style: none; padding: 0; margin: 12px 0 0;
+  font-size: 12px;
+}
+.matrix-legend li { display: flex; align-items: center; gap: 6px; }
+.swatch { width: 16px; height: 16px; border-radius: 3px; display: inline-block; border: 1px solid rgba(0,0,0,.08); }
+.swatch.r-green { background: var(--green-bg); }
+.swatch.r-yellow { background: var(--yellow-bg); }
+.swatch.r-orange { background: var(--orange-bg); }
+.swatch.r-red { background: var(--red-bg); }
+
+/* ============================================================
+   Glossar
+   ============================================================ */
+.glossary { max-width: 880px; }
+.glossary dt { font-weight: 700; color: var(--primary); margin-top: 12px; }
+.glossary dd { margin: 3px 0 0; color: var(--text); }
+
+/* ============================================================
+   Footer
+   ============================================================ */
+.app-footer { padding: 14px 22px; text-align: center; font-size: 11.5px; color: var(--muted); }
+
+/* ============================================================
+   Print / Druck helpers
+   ============================================================ */
+.print-only { display: none; }
+
+/* ============================================================
+   Responsive
+   ============================================================ */
+@media (max-width: 720px) {
+  .app-header { flex-direction: column; align-items: flex-start; }
+  main { padding: 14px 12px 32px; }
+  .data-table { font-size: 12px; }
+  .col-bereich, .col-verant { width: auto; }
+}
+
+/* ============================================================
+   @media print – alle Reiter, Querformat, ohne Bedienelemente
+   ============================================================ */
+@media print {
+  @page { size: landscape; margin: 12mm; }
+
+  body { background: #fff; font-size: 11px; }
+  .no-print { display: none !important; }
+  .print-only { display: block; }
+
+  .print-head { margin-bottom: 10px; border-bottom: 2px solid var(--primary); padding-bottom: 6px; }
+  .print-head h1 { font-size: 16px; color: var(--primary); margin: 0; }
+  .print-head #print-meta { font-size: 11px; color: #333; margin: 4px 0 0; }
+
+  main { padding: 0; max-width: none; }
+
+  /* alle Sektionen sichtbar, jede auf neue Seite */
+  .tab-section { display: block !important; page-break-after: always; }
+  .tab-section:last-child { page-break-after: auto; }
+
+  /* Anleitung/Erklärbox aufgeklappt zeigen */
+  .info-box { box-shadow: none; }
+  .info-box > summary { list-style: none; }
+  .info-box .steps, .info-box > p { display: block !important; }
+
+  /* Disclaimer im Druck behalten */
+  .disclaimer { border-left: 4px solid #c9a227; }
+
+  /* Tabellen druckfreundlich */
+  .table-wrap { overflow: visible; border: none; }
+  .data-table thead th { position: static; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .data-table, .nf-card, .dash-card, .info-box, .matrix, .risk-badge,
+  .swatch, .chip, .data-table thead th {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  tr, .nf-card, .dash-card { page-break-inside: avoid; }
+
+  /* Dropdowns / Inputs als Text: Rahmen & Pfeil weg */
+  .cell-select, .cell-input, .risk-selects select,
+  .form-field textarea, .nf-field textarea, .meta-field input,
+  .nf-card__head input {
+    border: none !important;
+    background: transparent !important;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    padding: 1px 2px !important;
+    resize: none;
+    color: #000 !important;
+    min-height: 0 !important;
+  }
+  select { background-image: none !important; }
+
+  .dashboard { display: flex; gap: 10px; }
+}
