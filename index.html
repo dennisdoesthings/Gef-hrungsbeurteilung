@@ -3,31 +3,28 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="theme-color" content="#ffffff">
   <title>Gefährdungsbeurteilung &amp; Sicherheitskonzept – Veranstaltung</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
   <header class="app-header no-print">
-    <div class="app-header__inner">
-      <div class="app-header__title">
-        <span class="app-header__mark" aria-hidden="true"></span>
-        <div>
-          <h1>Gefährdungsbeurteilung <span class="plus">+</span> Sicherheitskonzept</h1>
-          <p class="app-header__sub">Veranstaltungen in Versammlungsstätten — methodische Arbeitsgrundlage</p>
-        </div>
+    <div class="app-header__title">
+      <span class="app-header__mark" aria-hidden="true">!</span>
+      <div>
+        <h1>Gefährdungsbeurteilung &amp; Sicherheitskonzept</h1>
+        <p class="app-header__sub">Veranstaltungen in Versammlungsstätten — methodische Arbeitsgrundlage</p>
       </div>
-      <div class="app-header__right">
-        <img class="app-header__logo" id="brand-logo" src="branding/logo.png" alt="Logo"
-             onerror="this.style.display='none'">
-        <div class="app-header__actions">
-          <button type="button" class="btn btn--primary" id="btn-print">Drucken / PDF</button>
-          <button type="button" class="btn" id="btn-export">Export JSON</button>
-          <button type="button" class="btn" id="btn-import">Import JSON</button>
-          <input type="file" id="file-import" accept="application/json,.json" hidden>
-          <button type="button" class="btn btn--danger" id="btn-reset">Zurücksetzen</button>
-        </div>
+    </div>
+    <div class="app-header__right">
+      <img class="app-header__logo" id="brand-logo" src="branding/logo.png" alt="Logo"
+           onerror="this.style.display='none'">
+      <div class="app-header__actions">
+        <button type="button" class="btn" id="btn-print">Drucken / PDF</button>
+        <button type="button" class="btn" id="btn-export">Export JSON</button>
+        <button type="button" class="btn" id="btn-import">Import JSON</button>
+        <input type="file" id="file-import" accept="application/json,.json" hidden>
+        <button type="button" class="btn btn--danger" id="btn-reset">Zurücksetzen</button>
       </div>
     </div>
   </header>
@@ -43,124 +40,75 @@
   <!-- Metadaten -->
   <section class="meta-bar no-print" aria-label="Metadaten der Veranstaltung">
     <div class="meta-grid">
-      <label class="meta-field meta-field--wide"><span>Veranstaltung</span><input type="text" id="meta-veranstaltung" placeholder="z. B. Fachkongress 2026"></label>
-      <label class="meta-field meta-field--wide"><span>Ort / Haus</span><input type="text" id="meta-ort" placeholder="z. B. Kongresszentrum, Saal A–C"></label>
+      <label class="meta-field"><span>Veranstaltung</span><input type="text" id="meta-veranstaltung" placeholder="z. B. Fachkongress 2026"></label>
+      <label class="meta-field"><span>Ort / Haus</span><input type="text" id="meta-ort" placeholder="z. B. Kongresszentrum, Saal A–C"></label>
       <label class="meta-field"><span>Datum</span><input type="text" id="meta-datum" placeholder="TT.MM.JJJJ"></label>
-      <label class="meta-field"><span>Erwartete Besucher</span><input type="text" id="meta-besucher" inputmode="numeric" placeholder="z. B. 1.200"></label>
+      <label class="meta-field"><span>Erwartete Besucher</span><input type="text" id="meta-besucher" placeholder="z. B. 1.200"></label>
       <label class="meta-field"><span>Ersteller</span><input type="text" id="meta-ersteller" placeholder="Name / Funktion"></label>
       <label class="meta-field"><span>Stand</span><input type="text" id="meta-stand" placeholder="TT.MM.JJJJ"></label>
     </div>
   </section>
 
+  <!-- Rechtsgrundlagen-Hinweis (kundentauglich) -->
+  <div class="disclaimer" role="note">
+    <strong>Rechtsgrundlagen:</strong> Diese Gefährdungsbeurteilung wurde nach §&nbsp;5 ArbSchG (Schutz der Beschäftigten)
+    sowie §&nbsp;43 VStättVO / Landes-VStättVO (Schutz der Besucher) erstellt. Personalbemessung
+    (z.&nbsp;B. Sanitätsdienst nach Kölner Algorithmus), konkrete Auflagen und Pflichtinhalte werden mit den
+    Sicherheitsrichtlinien des Hauses und den zuständigen Behörden abgestimmt.
+  </div>
+
   <!-- Navigation -->
-  <nav class="app-nav no-print" aria-label="Bereiche">
-    <div class="app-nav__inner" role="tablist">
-      <button class="tab-btn" role="tab" id="tabbtn-gefaehrdung" aria-controls="tab-gefaehrdung" data-tab="gefaehrdung" aria-selected="true"><span class="tab-num">1</span>Gefährdungsbeurteilung<span class="tab-badge" data-badge="gefaehrdung"></span></button>
-      <button class="tab-btn" role="tab" id="tabbtn-massnahmen" aria-controls="tab-massnahmen" data-tab="massnahmen" aria-selected="false"><span class="tab-num">2</span>Maßnahmenplan<span class="tab-badge" data-badge="massnahmen"></span></button>
-      <button class="tab-btn" role="tab" id="tabbtn-ordnungsdienst" aria-controls="tab-ordnungsdienst" data-tab="ordnungsdienst" aria-selected="false"><span class="tab-num">3</span>Ordnungsdienst<span class="tab-badge" data-badge="ordnungsdienst"></span></button>
-      <button class="tab-btn" role="tab" id="tabbtn-sanitaetsdienst" aria-controls="tab-sanitaetsdienst" data-tab="sanitaetsdienst" aria-selected="false"><span class="tab-num">4</span>Sanitätsdienst<span class="tab-badge" data-badge="sanitaetsdienst"></span></button>
-      <button class="tab-btn" role="tab" id="tabbtn-brandschutz" aria-controls="tab-brandschutz" data-tab="brandschutz" aria-selected="false"><span class="tab-num">5</span>Brandschutz<span class="tab-badge" data-badge="brandschutz"></span></button>
-      <button class="tab-btn" role="tab" id="tabbtn-notfall" aria-controls="tab-notfall" data-tab="notfall" aria-selected="false"><span class="tab-num">6</span>Notfallszenarien<span class="tab-badge" data-badge="notfall"></span></button>
-      <button class="tab-btn" role="tab" id="tabbtn-glossar" aria-controls="tab-glossar" data-tab="glossar" aria-selected="false"><span class="tab-num">7</span>Glossar</button>
-    </div>
+  <nav class="app-nav no-print" role="tablist" aria-label="Bereiche">
+    <button class="tab-btn" role="tab" data-tab="gefaehrdung" aria-selected="true">1 · Gefährdungsbeurteilung</button>
+    <button class="tab-btn" role="tab" data-tab="massnahmen" aria-selected="false">2 · Maßnahmenplan</button>
+    <button class="tab-btn" role="tab" data-tab="ordnungsdienst" aria-selected="false">3 · Ordnungsdienst</button>
+    <button class="tab-btn" role="tab" data-tab="sanitaetsdienst" aria-selected="false">4 · Sanitätsdienst</button>
+    <button class="tab-btn" role="tab" data-tab="brandschutz" aria-selected="false">5 · Brandschutz</button>
+    <button class="tab-btn" role="tab" data-tab="notfall" aria-selected="false">6 · Notfallszenarien</button>
+    <button class="tab-btn" role="tab" data-tab="glossar" aria-selected="false">7 · Glossar</button>
   </nav>
 
   <main>
 
-    <!-- Rechtsgrundlagen-Hinweis (kundentauglich) -->
-    <div class="disclaimer" role="note">
-      <strong>Rechtsgrundlagen:</strong> Diese Gefährdungsbeurteilung wurde nach §&nbsp;5 ArbSchG (Schutz der Beschäftigten)
-      sowie §&nbsp;43 VStättVO / Landes-VStättVO (Schutz der Besucher) erstellt. Personalbemessung
-      (z.&nbsp;B. Sanitätsdienst nach Kölner Algorithmus), konkrete Auflagen und Pflichtinhalte werden mit den
-      Sicherheitsrichtlinien des Hauses und den zuständigen Behörden abgestimmt.
-    </div>
-
     <!-- ================= 1 · GEFÄHRDUNGSBEURTEILUNG ================= -->
-    <section class="tab-section is-active" id="tab-gefaehrdung" role="tabpanel" aria-labelledby="tabbtn-gefaehrdung">
+    <section class="tab-section is-active" id="tab-gefaehrdung" role="tabpanel">
       <h2 class="section-title">Gefährdungsbeurteilung</h2>
-      <p class="hint">Gesamtkatalog für Messe, Kongress, Tagung, Veranstaltungstechnik und Strom. Vorschläge prüfen, anpassen und ergänzen.</p>
 
-      <div class="info-group">
-        <details class="info-box">
-          <summary>Anleitung: Wie beurteile ich eine Gefährdung? (7 Schritte)</summary>
-          <ol class="steps">
-            <li><strong>Tätigkeiten / Bereiche festlegen</strong> – Was passiert wo? (Aufbau, Betrieb, Abbau, einzelne Säle).</li>
-            <li><strong>Gefährdungen ermitteln</strong> – Welche Gefahren bestehen je Bereich (mechanisch, elektrisch, Brand, Personenströme …)?</li>
-            <li><strong>Risiko beurteilen</strong> – Eintrittswahrscheinlichkeit (E, 1–4) × Schwere (S, 1–4) = Risiko (1–16) <em>ohne</em> Maßnahme.</li>
-            <li><strong>Maßnahmen festlegen</strong> – nach STOP-Prinzip: <em>S</em>ubstitution → <em>T</em>echnisch → <em>O</em>rganisatorisch → <em>P</em>ersönlich.</li>
-            <li><strong>Maßnahmen umsetzen</strong> – Verantwortliche und Termine benennen.</li>
-            <li><strong>Wirksamkeit prüfen</strong> – Restrisiko erneut bewerten (E×S <em>mit</em> Maßnahme). Reicht es nicht, Maßnahme verbessern.</li>
-            <li><strong>Fortschreiben / dokumentieren</strong> – Bei Änderungen der Veranstaltung erneut prüfen.</li>
-          </ol>
-        </details>
+      <details class="info-box">
+        <summary>Anleitung: Wie beurteile ich eine Gefährdung? (7 Schritte)</summary>
+        <ol class="steps">
+          <li><strong>Tätigkeiten / Bereiche festlegen</strong> – Was passiert wo? (Aufbau, Betrieb, Abbau, einzelne Säle).</li>
+          <li><strong>Gefährdungen ermitteln</strong> – Welche Gefahren bestehen je Bereich (mechanisch, elektrisch, Brand, Personenströme …)?</li>
+          <li><strong>Risiko beurteilen</strong> – Eintrittswahrscheinlichkeit (E, 1–4) × Schwere (S, 1–4) = Risiko (1–16) <em>ohne</em> Maßnahme.</li>
+          <li><strong>Maßnahmen festlegen</strong> – nach STOP-Prinzip: <em>S</em>ubstitution → <em>T</em>echnisch → <em>O</em>rganisatorisch → <em>P</em>ersönlich.</li>
+          <li><strong>Maßnahmen umsetzen</strong> – Verantwortliche und Termine benennen.</li>
+          <li><strong>Wirksamkeit prüfen</strong> – Restrisiko erneut bewerten (E×S <em>mit</em> Maßnahme). Reicht es nicht, Maßnahme verbessern.</li>
+          <li><strong>Fortschreiben / dokumentieren</strong> – Bei Änderungen der Veranstaltung erneut prüfen.</li>
+        </ol>
+      </details>
 
-        <details class="info-box">
-          <summary>Erklärung: Risiko vs. Restrisiko – einfach erklärt</summary>
-          <p>
-            Das <strong>Risiko</strong> beschreibt die Gefahr, <strong>bevor</strong> Sie etwas dagegen tun –
-            also wie wahrscheinlich (E) und wie schwer (S) ein Schaden eintreten könnte, wenn nichts unternommen wird.
-            Das <strong>Restrisiko</strong> ist die Gefahr, die <strong>übrig bleibt, nachdem</strong> Sie Ihre Schutzmaßnahmen umgesetzt haben.
-            Ziel ist es, das Restrisiko durch wirksame Maßnahmen (STOP-Prinzip) so weit wie möglich zu senken.
-            Beide werden mit derselben Formel <span class="mono">E × S</span> bewertet.
-          </p>
-        </details>
-      </div>
-
-      <!-- Überblick: Dashboard + Risikomatrix -->
-      <div class="overview">
-        <div class="overview__main">
-          <h3 class="block-title">Risiko ohne Maßnahmen <span class="block-title__hint no-print">Kachel anklicken = filtern</span></h3>
-          <div class="dashboard" id="dashboard"></div>
-          <div class="progress" id="progress"></div>
-        </div>
-
-        <div class="matrix-block">
-          <div class="matrix-block__head">
-            <h3 class="block-title">Risikomatrix</h3>
-            <div class="segmented no-print" id="matrix-mode" role="group" aria-label="Anzeige der Matrix">
-              <button type="button" data-mode="risk" aria-pressed="true">Risiko</button>
-              <button type="button" data-mode="rest" aria-pressed="false">Restrisiko</button>
-            </div>
-          </div>
-          <div class="matrix-figure">
-            <span class="matrix-axis matrix-axis--y">Schwere (S)</span>
-            <div class="matrix-wrap" id="matrix"></div>
-            <span class="matrix-axis matrix-axis--x">Eintrittswahrscheinlichkeit (E)</span>
-          </div>
-          <ul class="matrix-legend">
-            <li><span class="swatch r-green"></span>1–3 gering</li>
-            <li><span class="swatch r-yellow"></span>4–6 mittel</li>
-            <li><span class="swatch r-orange"></span>7–9 hoch</li>
-            <li><span class="swatch r-red"></span>10–16 sehr hoch</li>
-          </ul>
-          <p class="matrix-note">Große Zahl = E × S, kleine Zahl = Anzahl Gefährdungen. <span class="no-print">Feld anklicken = filtern.</span></p>
-        </div>
-      </div>
+      <details class="info-box">
+        <summary>Erklärung: Risiko vs. Restrisiko – einfach erklärt</summary>
+        <p>
+          Das <strong>Risiko</strong> beschreibt die Gefahr, <strong>bevor</strong> Sie etwas dagegen tun –
+          also wie wahrscheinlich (E) und wie schwer (S) ein Schaden eintreten könnte, wenn nichts unternommen wird.
+          Das <strong>Restrisiko</strong> ist die Gefahr, die <strong>übrig bleibt, nachdem</strong> Sie Ihre Schutzmaßnahmen umgesetzt haben.
+          Ziel ist es, das Restrisiko durch wirksame Maßnahmen (STOP-Prinzip) so weit wie möglich zu senken.
+          Beide werden mit derselben Formel <span class="mono">E × S</span> bewertet.
+        </p>
+      </details>
 
       <!-- Steuerleiste -->
-      <div class="toolbar no-print">
-        <label class="search">
-          <span class="visually-hidden">Gefährdungen durchsuchen</span>
-          <input type="search" id="gef-search" placeholder="Suchen: Gefährdung, Maßnahme, Verantwortliche …" autocomplete="off">
-        </label>
-        <label class="select-field">
-          <span>Sortierung</span>
-          <select id="gef-sort">
-            <option value="katalog">Katalog-Reihenfolge</option>
-            <option value="risiko">Risiko absteigend</option>
-            <option value="rest">Restrisiko absteigend</option>
-            <option value="bereich">Bereich</option>
-          </select>
-        </label>
-        <span class="toolbar__spacer"></span>
-        <button type="button" class="btn" id="btn-restore" hidden>Katalog ergänzen</button>
+      <div class="controls-row no-print">
+        <span class="controls-label">Gesamtkatalog · Messe · Kongress · Tagung · Technik · Strom</span>
         <button type="button" class="btn btn--primary" id="btn-add-row">+ Gefährdung ergänzen</button>
       </div>
 
       <!-- Kategorie-Filter -->
       <div class="filter-bar no-print" id="filter-bar" aria-label="Filter nach Bereich"></div>
 
-      <div class="filter-info" id="filter-info" aria-live="polite"></div>
+      <!-- Dashboard -->
+      <div class="dashboard" id="dashboard"></div>
 
       <!-- Tabelle -->
       <div class="table-wrap">
@@ -170,37 +118,42 @@
               <th class="col-bereich">Bereich</th>
               <th class="col-gefahr">Gefährdung</th>
               <th class="col-massnahme">Schutzmaßnahme (STOP)</th>
-              <th class="col-risk">Risiko<span class="th-sub">E × S</span></th>
-              <th class="col-risk">Restrisiko<span class="th-sub">E × S</span></th>
+              <th class="col-risk">Risiko<br><span class="th-sub">E × S</span></th>
+              <th class="col-risk">Restrisiko<br><span class="th-sub">E × S</span></th>
               <th class="col-verant">Verantwortlich</th>
               <th class="col-done">erl.</th>
-              <th class="col-act no-print"><span class="visually-hidden">Aktionen</span></th>
+              <th class="col-act no-print"></th>
             </tr>
           </thead>
           <tbody id="gef-tbody"></tbody>
         </table>
       </div>
+
+      <!-- Risikomatrix -->
+      <div class="matrix-block">
+        <h3>Risikomatrix (4 × 4) – Legende</h3>
+        <div class="matrix-wrap" id="matrix"></div>
+        <ul class="matrix-legend">
+          <li><span class="swatch r-green"></span> 1–3 gering</li>
+          <li><span class="swatch r-yellow"></span> 4–6 mittel</li>
+          <li><span class="swatch r-orange"></span> 7–9 hoch</li>
+          <li><span class="swatch r-red"></span> 10–16 sehr hoch</li>
+        </ul>
+      </div>
     </section>
 
     <!-- ================= 2 · MASSNAHMENPLAN ================= -->
-    <section class="tab-section" id="tab-massnahmen" role="tabpanel" aria-labelledby="tabbtn-massnahmen">
+    <section class="tab-section" id="tab-massnahmen" role="tabpanel">
       <h2 class="section-title">Maßnahmenplan</h2>
       <p class="hint">Alle Maßnahmen aus der Gefährdungsbeurteilung, nach Restrisiko absteigend. Gleiche Datenquelle – Änderungen wirken in beide Richtungen.</p>
-      <div class="toolbar no-print">
-        <span class="toolbar__info" id="mass-info"></span>
-        <label class="check-field"><input type="checkbox" id="chk-offene"> nur offene anzeigen</label>
-        <span class="toolbar__spacer"></span>
-        <button type="button" class="btn" id="btn-csv">Export CSV (Excel)</button>
-      </div>
       <div class="table-wrap">
         <table class="data-table" id="mass-table">
           <thead>
             <tr>
-              <th class="col-gefahr">Gefährdung</th>
-              <th class="col-massnahme">Maßnahme</th>
+              <th>Gefährdung</th>
+              <th>Maßnahme</th>
               <th class="col-risk">Restrisiko</th>
               <th class="col-verant">Verantwortlich</th>
-              <th class="col-termin">Termin</th>
               <th class="col-done">erl.</th>
             </tr>
           </thead>
@@ -210,39 +163,37 @@
     </section>
 
     <!-- ================= 3 · ORDNUNGSDIENST ================= -->
-    <section class="tab-section" id="tab-ordnungsdienst" role="tabpanel" aria-labelledby="tabbtn-ordnungsdienst">
+    <section class="tab-section" id="tab-ordnungsdienst" role="tabpanel">
       <h2 class="section-title">Sicherheits- / Ordnungsdienst</h2>
       <p class="hint">Vorlagentexte als Platzhalter – bitte veranstaltungsbezogen ausfüllen.</p>
       <div class="form-grid" id="form-ordnungsdienst"></div>
     </section>
 
     <!-- ================= 4 · SANITÄTSDIENST ================= -->
-    <section class="tab-section" id="tab-sanitaetsdienst" role="tabpanel" aria-labelledby="tabbtn-sanitaetsdienst">
+    <section class="tab-section" id="tab-sanitaetsdienst" role="tabpanel">
       <h2 class="section-title">Sanitätsdienst</h2>
       <p class="hint">Bemessungsverfahren werden benannt, nicht ausgerechnet – Werte mit Rettungsdienst und Behörde abstimmen.</p>
       <div class="form-grid" id="form-sanitaetsdienst"></div>
     </section>
 
     <!-- ================= 5 · BRANDSCHUTZ ================= -->
-    <section class="tab-section" id="tab-brandschutz" role="tabpanel" aria-labelledby="tabbtn-brandschutz">
+    <section class="tab-section" id="tab-brandschutz" role="tabpanel">
       <h2 class="section-title">Brandschutz</h2>
       <p class="hint">Baulicher, anlagentechnischer und organisatorischer Brandschutz – in Abstimmung mit Haus und Feuerwehr.</p>
       <div class="form-grid" id="form-brandschutz"></div>
     </section>
 
     <!-- ================= 6 · NOTFALLSZENARIEN ================= -->
-    <section class="tab-section" id="tab-notfall" role="tabpanel" aria-labelledby="tabbtn-notfall">
+    <section class="tab-section" id="tab-notfall" role="tabpanel">
       <h2 class="section-title">Notfallszenarien</h2>
-      <p class="hint">Je Szenario: Auslöser, Sofortmaßnahmen, Verantwortliche und Eskalation festlegen.</p>
-      <div class="toolbar no-print">
-        <span class="toolbar__spacer"></span>
+      <div class="controls-row no-print">
         <button type="button" class="btn btn--primary" id="btn-add-notfall">+ Szenario ergänzen</button>
       </div>
       <div class="card-grid" id="notfall-grid"></div>
     </section>
 
     <!-- ================= 7 · GLOSSAR ================= -->
-    <section class="tab-section" id="tab-glossar" role="tabpanel" aria-labelledby="tabbtn-glossar">
+    <section class="tab-section" id="tab-glossar" role="tabpanel">
       <h2 class="section-title">Glossar</h2>
       <dl class="glossary">
         <dt>E × S</dt><dd>Risikobewertung: Eintrittswahrscheinlichkeit (E, 1–4) multipliziert mit Schadensschwere (S, 1–4) ergibt einen Risikowert von 1–16.</dd>
@@ -264,13 +215,8 @@
   </main>
 
   <footer class="app-footer">
-    <div class="app-footer__inner">
-      <p>Erstellt als methodische Arbeitsgrundlage · ohne Gewähr.</p>
-      <p class="no-print">Autospeicherung im Browser (localStorage) · <span id="save-status" class="save-status">aktiv</span></p>
-    </div>
+    <p>Autospeicherung im Browser (localStorage) · Erstellt als methodische Arbeitsgrundlage · ohne Gewähr.</p>
   </footer>
-
-  <div class="toast no-print" id="toast" role="status" aria-live="polite" hidden></div>
 
   <script src="app.js"></script>
 </body>
