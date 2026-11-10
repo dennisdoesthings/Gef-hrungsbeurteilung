@@ -176,15 +176,24 @@ const NOTFALL_DEFAULT = [
 /* ============================================================
    State
    ============================================================ */
+const TABS = ['gefaehrdung', 'massnahmen', 'ordnungsdienst', 'sanitaetsdienst', 'brandschutz', 'notfall', 'glossar'];
+const RISK_KEYS = ['alle', 'green', 'yellow', 'orange', 'red', 'offen'];
+const SORT_KEYS = ['katalog', 'risiko', 'rest', 'bereich'];
+
 let state = null;
+let searchTerm = '';          // Suchbegriff (bewusst nicht gespeichert)
 
 function defaultState() {
   return {
-    version: 2,
+    version: 3,
     meta: { veranstaltung:'', ort:'', datum:'', besucher:'', ersteller:'', stand:'' },
     activeTab: 'gefaehrdung',
     filterBereich: 'alle',
     filterRisk: 'alle',
+    filterCell: null,          // "E-S" aus der Risikomatrix oder null
+    matrixMode: 'risk',        // 'risk' = ohne Maßnahme, 'rest' = mit Maßnahme
+    sortBy: 'katalog',
+    nurOffene: false,
     gefaehrdungen: KATALOG.map(toGefItem),
     concepts: { ordnungsdienst:{}, sanitaetsdienst:{}, brandschutz:{} },
     notfall: NOTFALL_DEFAULT.map(n => ({ ...n }))
@@ -197,7 +206,7 @@ function toGefItem(c) {
     id: c.id, catalog: 'katalog',
     bereich: c.bereich, gefahr: c.gefahr, massnahme: c.massnahme,
     e: c.e, s: c.s, re: c.re, rs: c.rs,
-    verantwortlich: '', erledigt: false, vorschlag: true
+    verantwortlich: '', termin: '', erledigt: false, vorschlag: true
   };
 }
 
@@ -205,85 +214,142 @@ function toGefItem(c) {
    Persistenz
    ============================================================ */
 function saveState() {
-  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
-  catch (e) { console.warn('Speichern fehlgeschlagen', e); }
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    setSaveStatus(true);
+  } catch (e) {
+    console.warn('Speichern fehlgeschlagen', e);
+    setSaveStatus(false);
+  }
+}
+
+function setSaveStatus(ok) {
+  const el = document.getElementById('save-status');
+  if (!el) return;
+  const t = new Date().toLocaleTimeString('de-DE', { hour:'2-digit', minute:'2-digit' });
+  el.textContent = ok ? 'Gespeichert · ' + t + ' Uhr' : 'Speichern nicht möglich – bitte JSON exportieren';
+  el.classList.toggle('is-error', !ok);
 }
 
 function loadState() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return defaultState();
-    const parsed = JSON.parse(raw);
-    return mergeState(parsed);
+    return mergeState(JSON.parse(raw));
   } catch (e) {
     console.warn('Laden fehlgeschlagen, Standard wird verwendet', e);
     return defaultState();
   }
 }
 
-/* defensiv: fehlende Felder ergänzen.
+function str(v) { return v == null ? '' : String(v); }
+function clamp14(v, fallback) {
+  const n = parseInt(v, 10);
+  return n >= 1 && n <= 4 ? n : fallback;
+}
+
+function sanitizeGef(g, seen) {
+  if (!g || typeof g !== 'object') return null;
+  let id = str(g.id);
+  if (!id || seen.has(id)) id = uid('c-');
+  seen.add(id);
+  return {
+    id,
+    catalog: g.catalog === 'katalog' ? 'katalog' : 'custom',
+    bereich: KATEGORIEN.includes(g.bereich) ? g.bereich : 'Sonstige',
+    gefahr: str(g.gefahr), massnahme: str(g.massnahme),
+    e: clamp14(g.e, 1), s: clamp14(g.s, 1), re: clamp14(g.re, 1), rs: clamp14(g.rs, 1),
+    verantwortlich: str(g.verantwortlich),
+    termin: /^\d{4}-\d{2}-\d{2}$/.test(str(g.termin)) ? g.termin : '',
+    erledigt: !!g.erledigt, vorschlag: !!g.vorschlag
+  };
+}
+
+function sanitizeNotfall(n, seen) {
+  if (!n || typeof n !== 'object') return null;
+  let id = str(n.id);
+  if (!id || seen.has(id)) id = uid('nf-');
+  seen.add(id);
+  return {
+    id, titel: str(n.titel), ausloeser: str(n.ausloeser), sofort: str(n.sofort),
+    verantwortlich: str(n.verantwortlich), eskalation: str(n.eskalation)
+  };
+}
+
+/* defensiv: fehlende/ungültige Felder ergänzen bzw. bereinigen.
    Altstände (version 1, getrennte Kataloge) werden auf den
    zusammengeführten Katalog migriert. */
 function mergeState(p) {
   const d = defaultState();
+  if (!p || typeof p !== 'object') return d;
+
+  const meta = {};
+  Object.keys(d.meta).forEach(k => { meta[k] = str(p.meta && p.meta[k]); });
+
+  const concepts = {};
+  Object.keys(FORM_DEFS).forEach(key => {
+    const src = (p.concepts && p.concepts[key]) || {};
+    concepts[key] = {};
+    FORM_DEFS[key].forEach(([field]) => { if (src[field]) concepts[key][field] = str(src[field]); });
+  });
+
   const migriert = !p.version || p.version < 2 || !Array.isArray(p.gefaehrdungen);
+  const seenG = new Set(), seenN = new Set();
+
   return {
-    version: 2,
-    meta: Object.assign(d.meta, p.meta || {}),
-    activeTab: p.activeTab || 'gefaehrdung',
-    filterBereich: p.filterBereich || 'alle',
-    filterRisk: p.filterRisk || 'alle',
-    gefaehrdungen: migriert ? d.gefaehrdungen : p.gefaehrdungen,
-    concepts: Object.assign({ ordnungsdienst:{}, sanitaetsdienst:{}, brandschutz:{} }, p.concepts || {}),
-    notfall: Array.isArray(p.notfall) ? p.notfall : d.notfall
+    version: 3,
+    meta,
+    activeTab: TABS.includes(p.activeTab) ? p.activeTab : 'gefaehrdung',
+    filterBereich: KATEGORIEN.includes(p.filterBereich) ? p.filterBereich : 'alle',
+    filterRisk: RISK_KEYS.includes(p.filterRisk) ? p.filterRisk : 'alle',
+    filterCell: /^[1-4]-[1-4]$/.test(str(p.filterCell)) ? p.filterCell : null,
+    matrixMode: p.matrixMode === 'rest' ? 'rest' : 'risk',
+    sortBy: SORT_KEYS.includes(p.sortBy) ? p.sortBy : 'katalog',
+    nurOffene: !!p.nurOffene,
+    gefaehrdungen: migriert ? d.gefaehrdungen : p.gefaehrdungen.map(g => sanitizeGef(g, seenG)).filter(Boolean),
+    concepts,
+    notfall: Array.isArray(p.notfall) ? p.notfall.map(n => sanitizeNotfall(n, seenN)).filter(Boolean) : d.notfall
   };
 }
 
 /* ============================================================
    Hilfsfunktionen
    ============================================================ */
-function esc(str) {
-  return String(str == null ? '' : str)
+function esc(s) {
+  return String(s == null ? '' : s)
     .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
     .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 }
-function uid(prefix) { return prefix + Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
+function uid(prefix) { return prefix + Date.now().toString(36) + Math.random().toString(36).slice(2,8); }
+function $(id) { return document.getElementById(id); }
 
-function riskClass(v) {
-  if (v <= 3) return 'r-green';
-  if (v <= 6) return 'r-yellow';
-  if (v <= 9) return 'r-orange';
-  return 'r-red';
+function riskOf(g) { return g.e * g.s; }
+function restOf(g) { return g.re * g.rs; }
+function levelOf(v) {
+  if (v <= 3) return 'green';
+  if (v <= 6) return 'yellow';
+  if (v <= 9) return 'orange';
+  return 'red';
 }
+function riskClass(v) { return 'r-' + levelOf(v); }
 function riskLabel(v) {
-  if (v <= 3) return 'gering';
-  if (v <= 6) return 'mittel';
-  if (v <= 9) return 'hoch';
-  return 'sehr hoch';
+  return { green:'gering', yellow:'mittel', orange:'hoch', red:'sehr hoch' }[levelOf(v)];
 }
-
-/* sichtbare Gefährdungen = der gesamte (zusammengeführte) Bestand */
-function visibleGef() {
-  return state.gefaehrdungen;
+function todayISO() {
+  const d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+function isOverdue(g) { return !!g.termin && !g.erledigt && g.termin < todayISO(); }
+function formatDate(iso) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || '');
+  return m ? `${m[3]}.${m[2]}.${m[1]}` : '';
 }
 
 /* ============================================================
-   Rendering: Gefährdungstabelle
+   Filter / Sortierung
    ============================================================ */
-const optionList16 = [1,2,3,4];
-
-function selectOptions(selected) {
-  return optionList16.map(n => `<option value="${n}"${n===selected?' selected':''}>${n}</option>`).join('');
-}
-
-function bereichOptions(selected) {
-  return KATEGORIEN.map(k => `<option value="${esc(k)}"${k===selected?' selected':''}>${esc(k)}</option>`).join('');
-}
-
-/* trifft eine Gefährdung den aktiven Risiko-Filter? (Risiko = E×S) */
 function matchRisk(g) {
-  if (state.filterRisk === 'alle') return true;
-  const r = g.e * g.s;
+  const r = riskOf(g);
   switch (state.filterRisk) {
     case 'green':  return r <= 3;
     case 'yellow': return r >= 4 && r <= 6;
@@ -293,134 +359,249 @@ function matchRisk(g) {
     default:       return true;
   }
 }
+function matchCell(g) {
+  if (!state.filterCell) return true;
+  const [e, s] = state.filterCell.split('-').map(Number);
+  return state.matrixMode === 'rest' ? (g.re === e && g.rs === s) : (g.e === e && g.s === s);
+}
+function matchSearch(g) {
+  if (!searchTerm) return true;
+  const hay = (g.bereich + ' ' + g.gefahr + ' ' + g.massnahme + ' ' + g.verantwortlich).toLowerCase();
+  return searchTerm.split(/\s+/).every(t => hay.includes(t));
+}
+function filtersActive() {
+  return state.filterBereich !== 'alle' || state.filterRisk !== 'alle' || !!state.filterCell || !!searchTerm;
+}
+function filteredGef() {
+  const list = state.gefaehrdungen.filter(g =>
+    (state.filterBereich === 'alle' || g.bereich === state.filterBereich) &&
+    matchRisk(g) && matchCell(g) && matchSearch(g));
+  switch (state.sortBy) {
+    case 'risiko':  list.sort((a, b) => riskOf(b) - riskOf(a)); break;
+    case 'rest':    list.sort((a, b) => restOf(b) - restOf(a)); break;
+    case 'bereich': list.sort((a, b) => KATEGORIEN.indexOf(a.bereich) - KATEGORIEN.indexOf(b.bereich)); break;
+  }
+  return list;
+}
+
+/* ============================================================
+   Rendering: Gefährdungstabelle
+   ============================================================ */
+function selectOptions(selected) {
+  return [1,2,3,4].map(n => `<option value="${n}"${n===selected?' selected':''}>${n}</option>`).join('');
+}
+function bereichOptions(selected) {
+  return KATEGORIEN.map(k => `<option value="${esc(k)}"${k===selected?' selected':''}>${esc(k)}</option>`).join('');
+}
+
+function badgeHTML(v) {
+  return `<span class="risk-badge ${riskClass(v)}">${v}</span><span class="risk-word">${riskLabel(v)}</span>`;
+}
+function riskMetaHTML(g) {
+  return badgeHTML(riskOf(g)) + (g.vorschlag ? '<span class="tag">Vorschlag</span>' : '');
+}
+function restMetaHTML(g) {
+  const risk = riskOf(g), rest = restOf(g);
+  let warn = '';
+  if (rest > risk) warn = '<span class="tag tag--warn" title="Das Restrisiko darf nicht über dem Ausgangsrisiko liegen.">höher als Risiko</span>';
+  else if (rest >= 7) warn = '<span class="tag tag--warn" title="Restrisiko weiterhin hoch – Maßnahme verbessern (STOP-Prinzip).">Maßnahme reicht nicht</span>';
+  return badgeHTML(rest) + warn;
+}
+
+function rowHTML(g) {
+  return `<tr data-id="${esc(g.id)}"${g.erledigt ? ' class="is-done"' : ''}>
+    <td class="col-bereich"><select class="cell-select" data-field="bereich" aria-label="Bereich">${bereichOptions(g.bereich)}</select></td>
+    <td><textarea class="cell-input" data-field="gefahr" rows="1" aria-label="Gefährdung" placeholder="Gefährdung beschreiben …">${esc(g.gefahr)}</textarea></td>
+    <td><textarea class="cell-input" data-field="massnahme" rows="1" aria-label="Schutzmaßnahme" placeholder="S: … · T: … · O: … · P: …">${esc(g.massnahme)}</textarea></td>
+    <td class="risk-cell" data-cell="risk">
+      <div class="risk-selects">
+        <select data-field="e" aria-label="Eintrittswahrscheinlichkeit">${selectOptions(g.e)}</select>
+        <span class="mul">×</span>
+        <select data-field="s" aria-label="Schwere">${selectOptions(g.s)}</select>
+      </div>
+      <div class="risk-meta">${riskMetaHTML(g)}</div>
+    </td>
+    <td class="risk-cell" data-cell="rest">
+      <div class="risk-selects">
+        <select data-field="re" aria-label="Eintrittswahrscheinlichkeit mit Maßnahme">${selectOptions(g.re)}</select>
+        <span class="mul">×</span>
+        <select data-field="rs" aria-label="Schwere mit Maßnahme">${selectOptions(g.rs)}</select>
+      </div>
+      <div class="risk-meta">${restMetaHTML(g)}</div>
+    </td>
+    <td class="col-verant"><input class="cell-input" type="text" data-field="verantwortlich" value="${esc(g.verantwortlich)}" aria-label="Verantwortlich" placeholder="Name / Funktion"></td>
+    <td class="col-done"><input class="done-check" type="checkbox" data-field="erledigt" ${g.erledigt?'checked':''} aria-label="erledigt"></td>
+    <td class="col-act no-print"><button type="button" class="row-del" data-action="del" title="Zeile löschen" aria-label="Zeile löschen">×</button></td>
+  </tr>`;
+}
 
 function renderGefTable() {
-  const tbody = document.getElementById('gef-tbody');
-  let list = visibleGef();
-  if (state.filterBereich !== 'alle') list = list.filter(g => g.bereich === state.filterBereich);
-  if (state.filterRisk !== 'alle') list = list.filter(matchRisk);
+  const tbody = $('gef-tbody');
+  const list = filteredGef();
+  tbody.innerHTML = list.length
+    ? list.map(rowHTML).join('')
+    : `<tr><td colspan="8" class="empty-row">Keine Einträge für diese Auswahl.</td></tr>`;
+  renderFilterInfo(list.length);
+  autosize($('tab-gefaehrdung'));
+}
 
-  if (list.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:18px;">Keine Einträge in diesem Filter.</td></tr>`;
-    return;
-  }
-
-  tbody.innerHTML = list.map(g => {
-    const risk = g.e * g.s;
-    const rest = g.re * g.rs;
-    return `<tr data-id="${esc(g.id)}">
-      <td class="col-bereich"><select class="cell-select" data-field="bereich" aria-label="Bereich">${bereichOptions(g.bereich)}</select></td>
-      <td><textarea class="cell-input" data-field="gefahr" rows="2" aria-label="Gefährdung">${esc(g.gefahr)}</textarea></td>
-      <td><textarea class="cell-input" data-field="massnahme" rows="2" aria-label="Schutzmaßnahme">${esc(g.massnahme)}</textarea></td>
-      <td class="risk-cell">
-        <div class="risk-selects">
-          <select data-field="e" aria-label="Eintrittswahrscheinlichkeit">${selectOptions(g.e)}</select>
-          <span class="mul">×</span>
-          <select data-field="s" aria-label="Schwere">${selectOptions(g.s)}</select>
-        </div>
-        <span class="risk-badge ${riskClass(risk)}" title="${riskLabel(risk)}">${risk}</span>
-        ${g.vorschlag ? '<span class="vorschlag-tag">Vorschlag</span>' : ''}
-      </td>
-      <td class="risk-cell">
-        <div class="risk-selects">
-          <select data-field="re" aria-label="Rest-Eintrittswahrscheinlichkeit">${selectOptions(g.re)}</select>
-          <span class="mul">×</span>
-          <select data-field="rs" aria-label="Rest-Schwere">${selectOptions(g.rs)}</select>
-        </div>
-        <span class="risk-badge ${riskClass(rest)}" title="${riskLabel(rest)}">${rest}</span>
-      </td>
-      <td class="col-verant"><input class="cell-input is-text" type="text" data-field="verantwortlich" value="${esc(g.verantwortlich)}" aria-label="Verantwortlich"></td>
-      <td class="col-done"><input class="done-check" type="checkbox" data-field="erledigt" ${g.erledigt?'checked':''} aria-label="erledigt"></td>
-      <td class="col-act no-print"><button type="button" class="row-del" data-action="del" title="Zeile löschen" aria-label="Zeile löschen">×</button></td>
-    </tr>`;
-  }).join('');
+/* nur Badges/Hinweise einer Zeile aktualisieren (Fokus bleibt erhalten) */
+function updateRowMeta(tr, g) {
+  const risk = tr.querySelector('[data-cell="risk"] .risk-meta');
+  const rest = tr.querySelector('[data-cell="rest"] .risk-meta');
+  if (risk) risk.innerHTML = riskMetaHTML(g);
+  if (rest) rest.innerHTML = restMetaHTML(g);
 }
 
 /* ============================================================
-   Rendering: Filterchips
+   Rendering: Filterchips + Filterinfo
    ============================================================ */
 function renderFilterBar() {
-  const bar = document.getElementById('filter-bar');
-  const list = visibleGef();
+  const list = state.gefaehrdungen;
   const counts = {};
-  list.forEach(g => { counts[g.bereich] = (counts[g.bereich]||0)+1; });
+  list.forEach(g => { counts[g.bereich] = (counts[g.bereich] || 0) + 1; });
 
-  let html = `<button type="button" class="chip${state.filterBereich==='alle'?' is-active':''}" data-filter="alle">Alle<span class="chip-count">${list.length}</span></button>`;
-  // feste Reihenfolge, nur vorkommende Kategorien
-  KATEGORIEN.forEach(k => {
-    if (counts[k]) {
-      html += `<button type="button" class="chip${state.filterBereich===k?' is-active':''}" data-filter="${esc(k)}">${esc(k)}<span class="chip-count">${counts[k]}</span></button>`;
-    }
-  });
-  bar.innerHTML = html;
+  const chip = (key, label, n) =>
+    `<button type="button" class="chip${state.filterBereich===key?' is-active':''}" data-filter="${esc(key)}" aria-pressed="${state.filterBereich===key}">${esc(label)}<span class="chip-count">${n}</span></button>`;
+
+  let html = chip('alle', 'Alle', list.length);
+  KATEGORIEN.forEach(k => { if (counts[k]) html += chip(k, k, counts[k]); });
+  $('filter-bar').innerHTML = html;
+}
+
+function renderFilterInfo(shown) {
+  const total = state.gefaehrdungen.length;
+  const parts = [];
+  if (state.filterBereich !== 'alle') parts.push('Bereich: ' + state.filterBereich);
+  if (state.filterRisk !== 'alle') {
+    parts.push({ green:'Risiko gering', yellow:'Risiko mittel', orange:'Risiko hoch', red:'Risiko sehr hoch', offen:'offene Maßnahmen' }[state.filterRisk]);
+  }
+  if (state.filterCell) {
+    const [e, s] = state.filterCell.split('-');
+    parts.push(`Matrix ${state.matrixMode === 'rest' ? 'Restrisiko' : 'Risiko'} E${e} × S${s}`);
+  }
+  if (searchTerm) parts.push('Suche: „' + searchTerm + '“');
+
+  $('filter-info').innerHTML =
+    `<span><strong>${shown}</strong> von ${total} Gefährdungen</span>` +
+    parts.map(p => `<span class="filter-tag">${esc(p)}</span>`).join('') +
+    (parts.length ? '<button type="button" class="link-btn no-print" data-action="clear-filters">Filter zurücksetzen</button>' : '');
 }
 
 /* ============================================================
-   Rendering: Dashboard
+   Rendering: Dashboard + Fortschritt
    ============================================================ */
 function renderDashboard() {
-  const dash = document.getElementById('dashboard');
-  const list = visibleGef();
-  let green=0, yellow=0, orange=0, red=0, offen=0;
+  const list = state.gefaehrdungen;
+  const risk = { green:0, yellow:0, orange:0, red:0 };
+  const rest = { green:0, yellow:0, orange:0, red:0 };
+  let offen = 0, erledigt = 0;
   list.forEach(g => {
-    const r = g.e * g.s;
-    if (r <= 3) green++; else if (r <= 6) yellow++; else if (r <= 9) orange++; else red++;
-    if (r >= 7 && !g.erledigt) offen++;
+    risk[levelOf(riskOf(g))]++;
+    rest[levelOf(restOf(g))]++;
+    if (riskOf(g) >= 7 && !g.erledigt) offen++;
+    if (g.erledigt) erledigt++;
   });
+
   const cards = [
-    ['green',  'is-green',  green,  'gering (1–3)'],
-    ['yellow', 'is-yellow', yellow, 'mittel (4–6)'],
-    ['orange', 'is-orange', orange, 'hoch (7–9)'],
-    ['red',    'is-red',    red,    'sehr hoch (10–16)'],
-    ['offen',  'is-open',   offen,  'offene Maßnahmen (Risiko ≥ 7, nicht erledigt)']
-  ];
-  dash.innerHTML = cards.map(([key, cls, num, label]) => {
+    ['green',  'gering',    '1–3'],
+    ['yellow', 'mittel',    '4–6'],
+    ['orange', 'hoch',      '7–9'],
+    ['red',    'sehr hoch', '10–16']
+  ].map(([key, label, range]) => {
     const active = state.filterRisk === key;
-    return `<button type="button" class="dash-card ${cls}${active ? ' is-selected' : ''}" data-risk="${key}" aria-pressed="${active}" title="Tabelle nach dieser Stufe filtern">
-      <div class="dash-num">${num}</div>
-      <div class="dash-label">${label}</div>
+    return `<button type="button" class="dash-card is-${key}${active ? ' is-selected' : ''}" data-risk="${key}" aria-pressed="${active}" title="Tabelle nach dieser Risikostufe filtern">
+      <span class="dash-num">${risk[key]}</span>
+      <span class="dash-label">${label} <span class="dash-range">${range}</span></span>
+      <span class="dash-sub">mit Maßnahmen: <b>${rest[key]}</b></span>
     </button>`;
-  }).join('');
+  });
+
+  const activeOpen = state.filterRisk === 'offen';
+  cards.push(`<button type="button" class="dash-card is-open${activeOpen ? ' is-selected' : ''}" data-risk="offen" aria-pressed="${activeOpen}" title="Tabelle nach offenen Maßnahmen filtern">
+      <span class="dash-num">${offen}</span>
+      <span class="dash-label">offene Maßnahmen</span>
+      <span class="dash-sub">Risiko ≥ 7, nicht erledigt</span>
+    </button>`);
+  $('dashboard').innerHTML = cards.join('');
+
+  const pct = list.length ? Math.round(erledigt / list.length * 100) : 0;
+  $('progress').innerHTML =
+    `<div class="progress__head"><span>Maßnahmen umgesetzt</span><span><b>${erledigt}</b> von ${list.length} · ${pct} %</span></div>
+     <div class="progress__track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pct}" aria-label="Maßnahmen umgesetzt"><div class="progress__bar" style="width:${pct}%"></div></div>`;
 }
 
 /* ============================================================
-   Rendering: Risikomatrix 4x4
+   Rendering: Risikomatrix 4x4 (interaktiv)
    ============================================================ */
 function renderMatrix() {
-  const wrap = document.getElementById('matrix');
-  let html = '<table class="matrix"><caption>Zeilen = Schwere (S), Spalten = Eintrittswahrscheinlichkeit (E). Zahl = E × S.</caption>';
-  html += '<tr><th class="axis-label">S \\ E</th>';
-  for (let e=1; e<=4; e++) html += `<th>${e}</th>`;
-  html += '</tr>';
-  for (let s=4; s>=1; s--) {
-    html += `<tr><th>${s}</th>`;
-    for (let e=1; e<=4; e++) {
-      const v = e*s;
-      html += `<td class="${riskClass(v)}"><b>${v}</b></td>`;
+  const rest = state.matrixMode === 'rest';
+  const counts = {};
+  state.gefaehrdungen.forEach(g => {
+    const key = rest ? g.re + '-' + g.rs : g.e + '-' + g.s;
+    counts[key] = (counts[key] || 0) + 1;
+  });
+
+  let html = '<table class="matrix"><tbody>';
+  for (let s = 4; s >= 1; s--) {
+    html += `<tr><th scope="row">${s}</th>`;
+    for (let e = 1; e <= 4; e++) {
+      const v = e * s, key = e + '-' + s, n = counts[key] || 0;
+      const sel = state.filterCell === key;
+      html += `<td><button type="button" class="matrix-cell ${riskClass(v)}${sel ? ' is-selected' : ''}${n ? '' : ' is-empty'}" data-cell="${key}" aria-pressed="${sel}"
+        title="E ${e} × S ${s} = ${v} (${riskLabel(v)}) · ${n} Gefährdung${n === 1 ? '' : 'en'}">
+        <span class="matrix-val">${v}</span><span class="matrix-count">${n || ''}</span></button></td>`;
     }
     html += '</tr>';
   }
-  html += '</table>';
-  wrap.innerHTML = html;
+  html += '<tr><th></th>';
+  for (let e = 1; e <= 4; e++) html += `<th scope="col">${e}</th>`;
+  html += '</tr></tbody></table>';
+  $('matrix').innerHTML = html;
+
+  document.querySelectorAll('#matrix-mode [data-mode]').forEach(b => {
+    b.setAttribute('aria-pressed', String(b.dataset.mode === state.matrixMode));
+  });
 }
 
 /* ============================================================
    Rendering: Maßnahmenplan
    ============================================================ */
+/* "S: … · T: …" als gekennzeichnete STOP-Liste darstellen */
+function stopHTML(text) {
+  const parts = String(text || '').split(/\s+·\s+/).filter(Boolean);
+  if (!parts.length) return '<span class="muted">–</span>';
+  return '<ul class="stop-list">' + parts.map(p => {
+    const m = /^([STOP]):\s*(.*)$/.exec(p);
+    return m
+      ? `<li><span class="stop stop-${m[1]}" title="${{S:'Substitution',T:'Technisch',O:'Organisatorisch',P:'Persönlich'}[m[1]]}">${m[1]}</span><span>${esc(m[2])}</span></li>`
+      : `<li><span class="stop stop-none"></span><span>${esc(p)}</span></li>`;
+  }).join('') + '</ul>';
+}
+
 function renderMassnahmen() {
-  const tbody = document.getElementById('mass-tbody');
-  const list = visibleGef().slice().sort((a,b) => (b.re*b.rs) - (a.re*a.rs));
-  if (list.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:18px;">Keine Maßnahmen vorhanden.</td></tr>`;
+  const tbody = $('mass-tbody');
+  let list = state.gefaehrdungen.slice().sort((a, b) => restOf(b) - restOf(a));
+  const offen = list.filter(g => !g.erledigt).length;
+  const overdue = list.filter(isOverdue).length;
+  if (state.nurOffene) list = list.filter(g => !g.erledigt);
+
+  $('chk-offene').checked = state.nurOffene;
+  $('mass-info').innerHTML = `<strong>${offen}</strong> offen · ${state.gefaehrdungen.length - offen} erledigt` +
+    (overdue ? ` · <span class="text-warn">${overdue} überfällig</span>` : '');
+
+  if (!list.length) {
+    tbody.innerHTML = `<tr><td colspan="6" class="empty-row">${state.nurOffene ? 'Alle Maßnahmen sind erledigt.' : 'Keine Maßnahmen vorhanden.'}</td></tr>`;
     return;
   }
   tbody.innerHTML = list.map(g => {
-    const rest = g.re * g.rs;
-    return `<tr data-id="${esc(g.id)}">
-      <td>${esc(g.gefahr)}</td>
-      <td>${esc(g.massnahme)}</td>
-      <td class="risk-cell"><span class="risk-badge ${riskClass(rest)}">${rest}</span></td>
-      <td class="col-verant"><input class="cell-input is-text" type="text" data-field="verantwortlich" value="${esc(g.verantwortlich)}" aria-label="Verantwortlich"></td>
+    const rest = restOf(g);
+    return `<tr data-id="${esc(g.id)}" class="${g.erledigt ? 'is-done' : ''}${isOverdue(g) ? ' is-overdue' : ''}">
+      <td><span class="cell-kicker">${esc(g.bereich)}</span>${esc(g.gefahr) || '<span class="muted">–</span>'}</td>
+      <td>${stopHTML(g.massnahme)}</td>
+      <td class="risk-cell"><div class="risk-meta">${badgeHTML(rest)}</div></td>
+      <td class="col-verant"><input class="cell-input" type="text" data-field="verantwortlich" value="${esc(g.verantwortlich)}" aria-label="Verantwortlich" placeholder="Name / Funktion"></td>
+      <td class="col-termin"><input class="cell-input${g.termin ? '' : ' is-empty'}" type="date" data-field="termin" value="${esc(g.termin)}" aria-label="Termin"><span class="overdue-note">überfällig</span></td>
       <td class="col-done"><input class="done-check" type="checkbox" data-field="erledigt" ${g.erledigt?'checked':''} aria-label="erledigt"></td>
     </tr>`;
   }).join('');
@@ -431,13 +612,13 @@ function renderMassnahmen() {
    ============================================================ */
 function renderForms() {
   Object.keys(FORM_DEFS).forEach(key => {
-    const container = document.getElementById('form-' + key);
+    const container = $('form-' + key);
     if (!container) return;
     const data = state.concepts[key] || {};
-    container.innerHTML = FORM_DEFS[key].map(([field, label, placeholder]) =>
+    container.innerHTML = FORM_DEFS[key].map(([field, label, placeholder], i) =>
       `<div class="form-field">
-        <label for="f-${key}-${field}">${esc(label)}</label>
-        <textarea id="f-${key}-${field}" data-form="${key}" data-field="${field}" placeholder="${esc(placeholder)}">${esc(data[field]||'')}</textarea>
+        <label for="f-${key}-${field}"><span class="form-num">${i + 1}</span>${esc(label)}</label>
+        <textarea id="f-${key}-${field}" data-form="${key}" data-field="${field}" rows="2" placeholder="${esc(placeholder)}">${esc(data[field] || '')}</textarea>
       </div>`).join('');
   });
 }
@@ -446,118 +627,258 @@ function renderForms() {
    Rendering: Notfallkarten
    ============================================================ */
 function renderNotfall() {
-  const grid = document.getElementById('notfall-grid');
-  grid.innerHTML = state.notfall.map(n =>
-    `<div class="nf-card" data-id="${esc(n.id)}">
+  const grid = $('notfall-grid');
+  if (!state.notfall.length) {
+    grid.innerHTML = '<p class="empty-row">Noch keine Szenarien angelegt.</p>';
+    return;
+  }
+  const field = (n, key, label) =>
+    `<div class="nf-field"><label for="nf-${esc(n.id)}-${key}">${label}</label><textarea id="nf-${esc(n.id)}-${key}" data-field="${key}" rows="1">${esc(n[key])}</textarea></div>`;
+  grid.innerHTML = state.notfall.map((n, i) =>
+    `<article class="nf-card" data-id="${esc(n.id)}">
       <div class="nf-card__head">
-        <input type="text" data-field="titel" value="${esc(n.titel)}" aria-label="Titel">
+        <span class="nf-num">${String(i + 1).padStart(2, '0')}</span>
+        <input type="text" data-field="titel" value="${esc(n.titel)}" aria-label="Titel des Szenarios" placeholder="Titel">
         <button type="button" class="row-del no-print" data-action="del-nf" title="Szenario löschen" aria-label="Szenario löschen">×</button>
       </div>
-      <div class="nf-field"><label>Auslöser</label><textarea data-field="ausloeser">${esc(n.ausloeser)}</textarea></div>
-      <div class="nf-field"><label>Sofortmaßnahmen</label><textarea data-field="sofort">${esc(n.sofort)}</textarea></div>
-      <div class="nf-field"><label>Verantwortlich</label><textarea data-field="verantwortlich">${esc(n.verantwortlich)}</textarea></div>
-      <div class="nf-field"><label>Eskalation</label><textarea data-field="eskalation">${esc(n.eskalation)}</textarea></div>
-    </div>`).join('');
+      ${field(n, 'ausloeser', 'Auslöser')}
+      ${field(n, 'sofort', 'Sofortmaßnahmen')}
+      ${field(n, 'verantwortlich', 'Verantwortlich')}
+      ${field(n, 'eskalation', 'Eskalation')}
+    </article>`).join('');
 }
 
 /* ============================================================
-   Rendering: Metadaten / Katalog-Buttons
+   Rendering: Metadaten / Tab-Zähler / Katalog-Button
    ============================================================ */
+const META_FIELDS = ['veranstaltung', 'ort', 'datum', 'besucher', 'ersteller', 'stand'];
+
 function renderMeta() {
-  document.getElementById('meta-veranstaltung').value = state.meta.veranstaltung;
-  document.getElementById('meta-ort').value = state.meta.ort;
-  document.getElementById('meta-datum').value = state.meta.datum;
-  document.getElementById('meta-besucher').value = state.meta.besucher;
-  document.getElementById('meta-ersteller').value = state.meta.ersteller;
-  document.getElementById('meta-stand').value = state.meta.stand;
+  META_FIELDS.forEach(f => { $('meta-' + f).value = state.meta[f]; });
+  $('gef-search').value = searchTerm;
+  $('gef-sort').value = state.sortBy;
+}
+
+function renderBadges() {
+  const set = (tab, text) => {
+    const el = document.querySelector(`[data-badge="${tab}"]`);
+    if (el) { el.textContent = text; el.hidden = text === ''; }
+  };
+  set('gefaehrdung', String(state.gefaehrdungen.length));
+  const offen = state.gefaehrdungen.filter(g => !g.erledigt).length;
+  set('massnahmen', offen ? offen + ' offen' : '✓');
+  Object.keys(FORM_DEFS).forEach(key => {
+    const data = state.concepts[key] || {};
+    const filled = FORM_DEFS[key].filter(([f]) => (data[f] || '').trim()).length;
+    set(key, filled + '/' + FORM_DEFS[key].length);
+  });
+  set('notfall', String(state.notfall.length));
+
+  const ids = new Set(state.gefaehrdungen.map(g => g.id));
+  const missing = KATALOG.filter(c => !ids.has(c.id)).length;
+  const btn = $('btn-restore');
+  btn.hidden = missing === 0;
+  btn.textContent = `Katalog ergänzen (${missing})`;
 }
 
 /* zentraler Re-Render der Gefährdungs-relevanten Teile */
 function renderGefAll() {
   renderFilterBar();
   renderDashboard();
+  renderMatrix();
   renderGefTable();
   renderMassnahmen();
+  renderBadges();
 }
 
 function renderAll() {
   renderMeta();
-  renderGefAll();
-  renderMatrix();
   renderForms();
   renderNotfall();
+  renderGefAll();
   setActiveTab(state.activeTab, false);
+}
+
+/* ============================================================
+   Textareas automatisch an den Inhalt anpassen
+   ============================================================ */
+function autosize(root) {
+  const els = Array.from((root || document).querySelectorAll('textarea')).filter(t => t.offsetParent !== null);
+  els.forEach(t => { t.style.height = 'auto'; });
+  const heights = els.map(t => t.scrollHeight);
+  els.forEach((t, i) => { t.style.height = (heights[i] + 2) + 'px'; });
+}
+function autosizeOne(t) {
+  t.style.height = 'auto';
+  t.style.height = (t.scrollHeight + 2) + 'px';
 }
 
 /* ============================================================
    Tabs
    ============================================================ */
-function setActiveTab(tab, save=true) {
+function setActiveTab(tab, save = true) {
+  if (!TABS.includes(tab)) tab = TABS[0];
   state.activeTab = tab;
   document.querySelectorAll('.tab-btn').forEach(b => {
     const on = b.dataset.tab === tab;
-    b.setAttribute('aria-selected', on ? 'true' : 'false');
+    b.setAttribute('aria-selected', String(on));
+    b.tabIndex = on ? 0 : -1;
   });
   document.querySelectorAll('.tab-section').forEach(s => {
     s.classList.toggle('is-active', s.id === 'tab-' + tab);
   });
+  if (tab === 'massnahmen') renderMassnahmen();
+  autosize($('tab-' + tab));
   if (save) saveState();
 }
+
+/* ============================================================
+   Toast (mit optionaler Rückgängig-Aktion)
+   ============================================================ */
+let toastTimer = null;
+function toast(msg, actionLabel, action) {
+  const el = $('toast');
+  el.textContent = '';
+  const span = document.createElement('span');
+  span.textContent = msg;
+  el.appendChild(span);
+  if (action) {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.textContent = actionLabel;
+    btn.addEventListener('click', () => { hideToast(); action(); });
+    el.appendChild(btn);
+  }
+  el.hidden = false;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(hideToast, action ? 8000 : 3500);
+}
+function hideToast() { clearTimeout(toastTimer); $('toast').hidden = true; }
 
 /* ============================================================
    Mutationen
    ============================================================ */
 function findGef(id) { return state.gefaehrdungen.find(g => g.id === id); }
 
+function clearFilters(keepBereich) {
+  if (!keepBereich) state.filterBereich = 'alle';
+  state.filterRisk = 'alle';
+  state.filterCell = null;
+  searchTerm = '';
+  $('gef-search').value = '';
+}
+
 function addGefRow() {
   const item = {
-    id: uid('c-'), catalog: 'custom', bereich: 'Sonstige',
+    id: uid('c-'), catalog: 'custom',
+    bereich: state.filterBereich !== 'alle' ? state.filterBereich : 'Sonstige',
     gefahr: '', massnahme: '', e: 1, s: 1, re: 1, rs: 1,
-    verantwortlich: '', erledigt: false, vorschlag: false
+    verantwortlich: '', termin: '', erledigt: false, vorschlag: false
   };
   state.gefaehrdungen.push(item);
+  clearFilters(true);            // neue Zeile muss sichtbar sein
   renderGefAll();
   saveState();
+  const tr = document.querySelector(`#gef-tbody tr[data-id="${cssEscape(item.id)}"]`);
+  if (tr) {
+    tr.scrollIntoView({ block: 'center' });
+    const ta = tr.querySelector('textarea');
+    if (ta) ta.focus({ preventScroll: true });
+  }
 }
 
 function deleteGefRow(id) {
-  state.gefaehrdungen = state.gefaehrdungen.filter(g => g.id !== id);
+  const idx = state.gefaehrdungen.findIndex(g => g.id === id);
+  if (idx < 0) return;
+  const [item] = state.gefaehrdungen.splice(idx, 1);
   renderGefAll();
   saveState();
+  toast('Gefährdung gelöscht.', 'Rückgängig', () => {
+    state.gefaehrdungen.splice(Math.min(idx, state.gefaehrdungen.length), 0, item);
+    renderGefAll();
+    saveState();
+  });
+}
+
+function restoreKatalog() {
+  const ids = new Set(state.gefaehrdungen.map(g => g.id));
+  const missing = KATALOG.filter(c => !ids.has(c.id));
+  if (!missing.length) return;
+  state.gefaehrdungen.push(...missing.map(toGefItem));
+  renderGefAll();
+  saveState();
+  toast(`${missing.length} Katalogeintr${missing.length === 1 ? 'ag' : 'äge'} wieder ergänzt.`);
 }
 
 function addNotfall() {
-  state.notfall.push({ id: uid('nf-'), titel:'Neues Szenario', ausloeser:'', sofort:'', verantwortlich:'', eskalation:'' });
+  const item = { id: uid('nf-'), titel:'', ausloeser:'', sofort:'', verantwortlich:'', eskalation:'' };
+  state.notfall.push(item);
   renderNotfall();
+  renderBadges();
+  autosize($('tab-notfall'));
   saveState();
+  const card = document.querySelector(`.nf-card[data-id="${cssEscape(item.id)}"]`);
+  if (card) {
+    card.scrollIntoView({ block: 'center' });
+    card.querySelector('input').focus({ preventScroll: true });
+  }
 }
 
 function deleteNotfall(id) {
-  state.notfall = state.notfall.filter(n => n.id !== id);
-  renderNotfall();
-  saveState();
+  const idx = state.notfall.findIndex(n => n.id === id);
+  if (idx < 0) return;
+  const [item] = state.notfall.splice(idx, 1);
+  const rerender = () => { renderNotfall(); renderBadges(); autosize($('tab-notfall')); saveState(); };
+  rerender();
+  toast('Szenario gelöscht.', 'Rückgängig', () => {
+    state.notfall.splice(Math.min(idx, state.notfall.length), 0, item);
+    rerender();
+  });
 }
 
 /* ============================================================
    Export / Import / Reset
    ============================================================ */
-function slugify(str) {
-  return String(str || '').trim().replace(/[^\w\sÄÖÜäöüß-]/g,'').replace(/\s+/g,'_').slice(0,60) || 'Veranstaltung';
+function slugify(s) {
+  return String(s || '').trim().replace(/[^\w\sÄÖÜäöüß-]/g,'').replace(/\s+/g,'_').slice(0,60);
 }
-
-function exportJSON() {
-  const data = JSON.stringify(state, null, 2);
-  const blob = new Blob([data], { type:'application/json' });
-  const url = URL.createObjectURL(blob);
+function fileBase() {
+  const name = slugify(state.meta.veranstaltung) || 'Veranstaltung';
+  const stand = slugify(state.meta.stand) || todayISO();
+  return `Gefaehrdungsbeurteilung_${name}_${stand}`;
+}
+function download(content, filename, type) {
+  const url = URL.createObjectURL(new Blob([content], { type }));
   const a = document.createElement('a');
-  const name = slugify(state.meta.veranstaltung);
-  const stand = slugify(state.meta.stand) || new Date().toISOString().slice(0,10);
   a.href = url;
-  a.download = `Gefaehrdungsbeurteilung_${name}_${stand}.json`;
+  a.download = filename;
   document.body.appendChild(a);
   a.click();
   a.remove();
-  URL.revokeObjectURL(url);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+function exportJSON() {
+  download(JSON.stringify(state, null, 2), fileBase() + '.json', 'application/json');
+}
+
+/* CSV für Excel (Semikolon, UTF-8 mit BOM) */
+function exportCSV() {
+  const cell = v => {
+    let s = String(v == null ? '' : v);
+    if (/^[=+\-@\t\r]/.test(s)) s = "'" + s;     // keine Formel-Ausführung in Excel
+    return '"' + s.replace(/"/g, '""') + '"';
+  };
+  const head = ['Bereich', 'Gefährdung', 'Schutzmaßnahme', 'E', 'S', 'Risiko', 'Risikostufe',
+                'E (mit Maßnahme)', 'S (mit Maßnahme)', 'Restrisiko', 'Restrisikostufe',
+                'Verantwortlich', 'Termin', 'Erledigt'];
+  const rows = state.gefaehrdungen.map(g => [
+    g.bereich, g.gefahr, g.massnahme, g.e, g.s, riskOf(g), riskLabel(riskOf(g)),
+    g.re, g.rs, restOf(g), riskLabel(restOf(g)),
+    g.verantwortlich, formatDate(g.termin), g.erledigt ? 'ja' : 'nein'
+  ]);
+  const csv = [head, ...rows].map(r => r.map(cell).join(';')).join('\r\n');
+  download('\uFEFF' + csv, fileBase() + '.csv', 'text/csv;charset=utf-8');
 }
 
 function importJSON(file) {
@@ -565,34 +886,48 @@ function importJSON(file) {
   reader.onload = () => {
     try {
       const parsed = JSON.parse(reader.result);
+      if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed) ||
+          !(Array.isArray(parsed.gefaehrdungen) || parsed.meta || parsed.concepts)) {
+        throw new Error('Format');
+      }
+      const backup = state;
       state = mergeState(parsed);
+      searchTerm = '';
       saveState();
       renderAll();
-      alert('Import erfolgreich.');
+      toast('Import erfolgreich.', 'Rückgängig', () => { state = backup; saveState(); renderAll(); });
     } catch (e) {
-      alert('Import fehlgeschlagen: Die Datei ist kein gültiges JSON dieses Tools.');
+      toast('Import fehlgeschlagen: keine gültige Datei dieses Tools.');
     }
   };
+  reader.onerror = () => toast('Import fehlgeschlagen: Datei konnte nicht gelesen werden.');
   reader.readAsText(file);
 }
 
 function resetAll() {
   if (!confirm('Wirklich alles zurücksetzen? Der gesamte Bearbeitungsstand wird gelöscht und der Standardkatalog wiederhergestellt.')) return;
-  localStorage.removeItem(STORAGE_KEY);
+  const backup = state;
   state = defaultState();
+  searchTerm = '';
   saveState();
   renderAll();
+  toast('Alles zurückgesetzt.', 'Rückgängig', () => { state = backup; saveState(); renderAll(); });
 }
 
 /* ============================================================
    Druck-Vorbereitung
    ============================================================ */
+let detailsBeforePrint = null;
+
 function preparePrint() {
+  cleanupPrint();
   // Anleitung/Erklärbox aufklappen
-  document.querySelectorAll('.info-box').forEach(d => d.open = true);
+  detailsBeforePrint = Array.from(document.querySelectorAll('.info-box')).map(d => [d, d.open]);
+  detailsBeforePrint.forEach(([d]) => { d.open = true; });
+
   // Druckkopf füllen
   const m = state.meta;
-  document.getElementById('print-title').textContent =
+  $('print-title').textContent =
     (m.veranstaltung ? m.veranstaltung + ' – ' : '') + 'Gefährdungsbeurteilung & Sicherheitskonzept';
   const parts = [];
   if (m.ort) parts.push('Ort: ' + m.ort);
@@ -600,37 +935,82 @@ function preparePrint() {
   if (m.besucher) parts.push('Besucher: ' + m.besucher);
   if (m.ersteller) parts.push('Ersteller: ' + m.ersteller);
   if (m.stand) parts.push('Stand: ' + m.stand);
-  document.getElementById('print-meta').textContent = parts.join(' · ');
+  if (filtersActive()) parts.push('Auszug – Filter aktiv');
+  $('print-meta').textContent = parts.join(' · ');
+
+  // Textfelder als Fließtext spiegeln, damit im Druck nichts abgeschnitten wird
+  document.querySelectorAll('main textarea').forEach(t => {
+    const d = document.createElement('div');
+    d.className = 'print-text';
+    d.textContent = t.value || '–';
+    t.insertAdjacentElement('afterend', d);
+  });
+}
+
+function cleanupPrint() {
+  document.querySelectorAll('.print-text').forEach(d => d.remove());
+  if (detailsBeforePrint) {
+    detailsBeforePrint.forEach(([d, open]) => { d.open = open; });
+    detailsBeforePrint = null;
+  }
 }
 
 /* ============================================================
    Event-Bindung
    ============================================================ */
 function bindEvents() {
-  // Tabs
-  document.querySelector('.app-nav').addEventListener('click', e => {
+  // Tabs (Klick + Pfeiltasten)
+  const nav = document.querySelector('.app-nav');
+  nav.addEventListener('click', e => {
     const btn = e.target.closest('.tab-btn');
     if (btn) setActiveTab(btn.dataset.tab);
+  });
+  nav.addEventListener('keydown', e => {
+    const i = TABS.indexOf(state.activeTab);
+    let next = null;
+    if (e.key === 'ArrowRight') next = TABS[(i + 1) % TABS.length];
+    else if (e.key === 'ArrowLeft') next = TABS[(i - 1 + TABS.length) % TABS.length];
+    else if (e.key === 'Home') next = TABS[0];
+    else if (e.key === 'End') next = TABS[TABS.length - 1];
+    if (!next) return;
+    e.preventDefault();
+    setActiveTab(next);
+    const btn = nav.querySelector(`[data-tab="${next}"]`);
+    btn.focus();
+    btn.scrollIntoView({ block: 'nearest', inline: 'nearest' });
   });
 
   // Metadaten
   document.querySelector('.meta-bar').addEventListener('input', e => {
-    const map = {
-      'meta-veranstaltung':'veranstaltung','meta-ort':'ort','meta-datum':'datum',
-      'meta-besucher':'besucher','meta-ersteller':'ersteller','meta-stand':'stand'
-    };
-    const field = map[e.target.id];
-    if (field) { state.meta[field] = e.target.value; saveState(); }
+    const field = (e.target.id || '').replace('meta-', '');
+    if (META_FIELDS.includes(field)) { state.meta[field] = e.target.value; saveState(); }
+  });
+
+  // Suche / Sortierung
+  $('gef-search').addEventListener('input', e => {
+    searchTerm = e.target.value.trim().toLowerCase();
+    renderGefTable();
+  });
+  $('gef-sort').addEventListener('change', e => {
+    state.sortBy = SORT_KEYS.includes(e.target.value) ? e.target.value : 'katalog';
+    renderGefTable(); saveState();
   });
 
   // Filterchips (Bereich)
-  document.getElementById('filter-bar').addEventListener('click', e => {
+  $('filter-bar').addEventListener('click', e => {
     const btn = e.target.closest('[data-filter]');
     if (btn) { state.filterBereich = btn.dataset.filter; renderFilterBar(); renderGefTable(); saveState(); }
   });
 
+  // Filter zurücksetzen
+  $('filter-info').addEventListener('click', e => {
+    if (!e.target.closest('[data-action="clear-filters"]')) return;
+    clearFilters(false);
+    renderGefAll(); saveState();
+  });
+
   // Dashboard-Kästen = Risiko-Filter (Toggle)
-  document.getElementById('dashboard').addEventListener('click', e => {
+  $('dashboard').addEventListener('click', e => {
     const card = e.target.closest('[data-risk]');
     if (!card) return;
     const key = card.dataset.risk;
@@ -638,25 +1018,44 @@ function bindEvents() {
     renderDashboard(); renderGefTable(); saveState();
   });
 
-  // Zeile ergänzen
-  document.getElementById('btn-add-row').addEventListener('click', addGefRow);
+  // Risikomatrix: Zelle = Filter (Toggle), Modus Risiko/Restrisiko
+  $('matrix').addEventListener('click', e => {
+    const cell = e.target.closest('[data-cell]');
+    if (!cell) return;
+    state.filterCell = (state.filterCell === cell.dataset.cell) ? null : cell.dataset.cell;
+    renderMatrix(); renderGefTable(); saveState();
+  });
+  $('matrix-mode').addEventListener('click', e => {
+    const btn = e.target.closest('[data-mode]');
+    if (!btn) return;
+    state.matrixMode = btn.dataset.mode === 'rest' ? 'rest' : 'risk';
+    renderMatrix();
+    if (state.filterCell) renderGefTable();
+    saveState();
+  });
 
-  // Gefährdungstabelle – change (Selects, Checkbox, Delete)
-  const tbody = document.getElementById('gef-tbody');
+  // Zeile ergänzen / Katalog wiederherstellen
+  $('btn-add-row').addEventListener('click', addGefRow);
+  $('btn-restore').addEventListener('click', restoreKatalog);
+
+  // Gefährdungstabelle – change (Selects, Checkbox)
+  const tbody = $('gef-tbody');
   tbody.addEventListener('change', e => {
     const tr = e.target.closest('tr'); if (!tr) return;
     const g = findGef(tr.dataset.id); if (!g) return;
     const field = e.target.dataset.field;
     if (['e','s','re','rs'].includes(field)) {
-      g[field] = parseInt(e.target.value, 10);
+      g[field] = clamp14(e.target.value, 1);
       g.vorschlag = false;            // Wert geändert -> kein Vorschlag mehr
-      renderDashboard(); renderGefTable(); renderMassnahmen(); saveState();
+      updateRowMeta(tr, g);           // Zeile bleibt stehen, Fokus bleibt erhalten
+      renderDashboard(); renderMatrix(); renderMassnahmen(); saveState();
     } else if (field === 'bereich') {
       g.bereich = e.target.value;
-      renderFilterBar(); renderGefTable(); saveState();
+      renderFilterBar(); saveState();
     } else if (field === 'erledigt') {
       g.erledigt = e.target.checked;
-      renderDashboard(); renderMassnahmen(); saveState();
+      tr.classList.toggle('is-done', g.erledigt);
+      renderDashboard(); renderMassnahmen(); renderBadges(); saveState();
     }
   });
   // Gefährdungstabelle – input (Textfelder, ohne Re-Render für Fokuserhalt)
@@ -666,7 +1065,6 @@ function bindEvents() {
     const field = e.target.dataset.field;
     if (['gefahr','massnahme','verantwortlich'].includes(field)) {
       g[field] = e.target.value;
-      if (field === 'verantwortlich') syncMassVerantwortlich(g.id, g.verantwortlich);
       saveState();
     }
   });
@@ -676,38 +1074,57 @@ function bindEvents() {
     if (del) { const tr = del.closest('tr'); if (tr) deleteGefRow(tr.dataset.id); }
   });
 
-  // Maßnahmenplan – Sync zurück
-  const massTbody = document.getElementById('mass-tbody');
+  // Maßnahmenplan
+  const massTbody = $('mass-tbody');
   massTbody.addEventListener('input', e => {
     const tr = e.target.closest('tr'); if (!tr) return;
     const g = findGef(tr.dataset.id); if (!g) return;
     if (e.target.dataset.field === 'verantwortlich') {
       g.verantwortlich = e.target.value;
-      syncGefVerantwortlich(g.id, g.verantwortlich);
+      const inp = document.querySelector(`#gef-tbody tr[data-id="${cssEscape(g.id)}"] input[data-field="verantwortlich"]`);
+      if (inp) inp.value = g.verantwortlich;
       saveState();
     }
   });
   massTbody.addEventListener('change', e => {
     const tr = e.target.closest('tr'); if (!tr) return;
     const g = findGef(tr.dataset.id); if (!g) return;
-    if (e.target.dataset.field === 'erledigt') {
+    const field = e.target.dataset.field;
+    if (field === 'erledigt') {
       g.erledigt = e.target.checked;
-      renderDashboard(); renderGefTable(); saveState();
+      const gefTr = document.querySelector(`#gef-tbody tr[data-id="${cssEscape(g.id)}"]`);
+      if (gefTr) {
+        gefTr.classList.toggle('is-done', g.erledigt);
+        gefTr.querySelector('.done-check').checked = g.erledigt;
+      }
+      renderDashboard(); renderMassnahmen(); renderBadges(); saveState();
+    } else if (field === 'termin') {
+      g.termin = /^\d{4}-\d{2}-\d{2}$/.test(e.target.value) ? e.target.value : '';
+      e.target.classList.toggle('is-empty', !g.termin);
+      tr.classList.toggle('is-overdue', isOverdue(g));
+      saveState();
     }
   });
+  $('chk-offene').addEventListener('change', e => {
+    state.nurOffene = e.target.checked;
+    renderMassnahmen(); saveState();
+  });
+  $('btn-csv').addEventListener('click', exportCSV);
 
-  // Konzept-Formulare
+  // Konzept-Formulare + automatische Höhe aller Textfelder
   document.querySelector('main').addEventListener('input', e => {
+    if (e.target.tagName === 'TEXTAREA') autosizeOne(e.target);
     const form = e.target.dataset.form;
     if (form && state.concepts[form]) {
       state.concepts[form][e.target.dataset.field] = e.target.value;
+      renderBadges();
       saveState();
     }
   });
 
   // Notfallkarten
-  document.getElementById('btn-add-notfall').addEventListener('click', addNotfall);
-  const nfGrid = document.getElementById('notfall-grid');
+  $('btn-add-notfall').addEventListener('click', addNotfall);
+  const nfGrid = $('notfall-grid');
   nfGrid.addEventListener('input', e => {
     const card = e.target.closest('.nf-card'); if (!card) return;
     const n = state.notfall.find(x => x.id === card.dataset.id); if (!n) return;
@@ -720,29 +1137,28 @@ function bindEvents() {
   });
 
   // Kopf-Aktionen
-  document.getElementById('btn-print').addEventListener('click', () => window.print());
-  document.getElementById('btn-export').addEventListener('click', exportJSON);
-  document.getElementById('btn-import').addEventListener('click', () => document.getElementById('file-import').click());
-  document.getElementById('file-import').addEventListener('change', e => {
+  $('btn-print').addEventListener('click', () => window.print());
+  $('btn-export').addEventListener('click', exportJSON);
+  $('btn-import').addEventListener('click', () => $('file-import').click());
+  $('file-import').addEventListener('change', e => {
     if (e.target.files && e.target.files[0]) importJSON(e.target.files[0]);
     e.target.value = '';
   });
-  document.getElementById('btn-reset').addEventListener('click', resetAll);
+  $('btn-reset').addEventListener('click', resetAll);
 
   // Druck
   window.addEventListener('beforeprint', preparePrint);
+  window.addEventListener('afterprint', cleanupPrint);
+
+  // Textfeld-Höhen bei Größenänderung neu berechnen
+  let resizeTimer = null;
+  window.addEventListener('resize', () => {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(() => autosize($('tab-' + state.activeTab)), 150);
+  });
 }
 
-/* Verantwortlich zwischen Tabelle und Plan synchron halten (ohne Re-Render des aktiven Felds) */
-function syncMassVerantwortlich(id, val) {
-  const inp = document.querySelector(`#mass-tbody tr[data-id="${cssEscape(id)}"] input[data-field="verantwortlich"]`);
-  if (inp && inp.value !== val) inp.value = val;
-}
-function syncGefVerantwortlich(id, val) {
-  const inp = document.querySelector(`#gef-tbody tr[data-id="${cssEscape(id)}"] input[data-field="verantwortlich"]`);
-  if (inp && inp.value !== val) inp.value = val;
-}
-function cssEscape(s) { return String(s).replace(/["\\]/g,'\\$&'); }
+function cssEscape(s) { return String(s).replace(/["\\]/g, '\\$&'); }
 
 /* ============================================================
    Init
