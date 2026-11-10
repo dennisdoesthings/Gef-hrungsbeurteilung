@@ -1,7 +1,7 @@
 /* ============================================================
    Gefährdungsbeurteilung & Sicherheitskonzept
-   Design: klar, flächig, kantig – Farbwelt in Anlehnung an
-   hamburg-messe.de (Marineblau, Anthrazit, Hellblau, Rot-Akzent).
+   Design: klar, flächig, kantig – Farbwelt der Startseite von
+   hamburg-messe.de (Blau, Mint, Marineblau, Rot, Anthrazit, Weiß).
    Die Risiko-Ampel bleibt als eigene Statusfarbwelt getrennt.
    ============================================================ */
 
@@ -12,24 +12,25 @@
   --ink:       #1b1c20;
   --muted:     #5a5a5a;
   --faint:     #8b8d92;
-  --sky:       #cadeeb;
-  --sky-50:    #e7eff5;
-  --grey:      #f1f2f2;
-  --red:       #dd413a;
-  --red-deep:  #b92f29;
+  --blue:      #5671ff;
+  --sky:       #b2e9c2;   /* Mint */
+  --sky-50:    #eef1ff;   /* Aufhellung des Blaus für ruhige Flächen */
+  --grey:      #f3f5ff;
+  --red:       #e30613;
+  --red-deep:  #b90510;
 
   /* Flächen / Linien */
   --bg:      #ffffff;
   --surface: #ffffff;
   --line:    rgba(27, 28, 32, .16);
   --line-2:  rgba(27, 28, 32, .08);
-  --ring:    rgba(0, 51, 93, .25);
+  --ring:    rgba(86, 113, 255, .32);
 
   /* Risiko-Ampel */
   --green-bg:  #d3f2e1; --green-fg:  #11613a; --green:  #53b883;
   --amber-bg:  #fdeeb0; --amber-fg:  #775700; --amber:  #e9b90c;
   --orange-bg: #ffd8b5; --orange-fg: #93400a; --orange: #f0822b;
-  --red-bg:    #f9d0cd; --red-fg:    #a3221c; --redr:   #dd413a;
+  --red-bg:    #f9d0cd; --red-fg:    #a3221c; --redr:   #e30613;
 
   --sans: "Circular", "Circular Std", "Helvetica Neue", Arial, "Noto Sans", system-ui, sans-serif;
   --mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
@@ -54,7 +55,7 @@ body {
 h1, h2, h3, p { margin: 0; }
 button, input, select, textarea { font: inherit; color: inherit; }
 
-:focus-visible { outline: 2px solid var(--navy); outline-offset: 2px; }
+:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
 
 .visually-hidden {
   position: absolute; width: 1px; height: 1px; overflow: hidden;
@@ -152,13 +153,13 @@ button, input, select, textarea { font: inherit; color: inherit; }
 }
 .chip:hover { background: var(--sky); }
 .chip.is-active { background: var(--navy); color: #fff; }
-.chip .chip-count { margin-left: 7px; font-size: 12px; font-weight: 700; color: var(--navy); font-variant-numeric: tabular-nums; }
+.chip .chip-count { margin-left: 7px; font-size: 12px; font-weight: 700; color: var(--blue); font-variant-numeric: tabular-nums; }
 .chip.is-active .chip-count { color: var(--sky); }
 
 /* ============================================================
    Metadaten
    ============================================================ */
-.meta-bar { background: var(--sky-50); }
+.meta-bar { background: var(--blue); }
 .meta-grid {
   max-width: var(--page);
   margin: 0 auto;
@@ -169,18 +170,17 @@ button, input, select, textarea { font: inherit; color: inherit; }
 }
 .meta-field { display: flex; flex-direction: column; gap: 6px; grid-column: span 1; min-width: 0; }
 .meta-field--wide { grid-column: span 2; }
-.meta-field span { font-size: 12.5px; font-weight: 700; color: var(--navy); }
+.meta-field span { font-size: 14px; font-weight: 700; color: #fff; }
 .meta-field input {
   width: 100%;
   padding: 9px 11px;
   border: 0;
-  border-bottom: 2px solid var(--navy);
   border-radius: 0;
   background: #fff;
   transition: box-shadow .15s;
 }
 .meta-field input::placeholder { color: var(--faint); }
-.meta-field input:focus { outline: none; box-shadow: 0 0 0 3px var(--ring); }
+.meta-field input:focus { outline: none; box-shadow: 0 0 0 3px var(--sky); }
 
 /* ============================================================
    Navigation
@@ -226,8 +226,8 @@ button, input, select, textarea { font: inherit; color: inherit; }
   font-size: 11.5px; font-weight: 700; line-height: 1;
   padding: 4px 7px;
   border-radius: 100px;
-  background: var(--sky-50);
-  color: var(--navy);
+  background: var(--sky);
+  color: var(--ink);
   font-variant-numeric: tabular-nums;
 }
 .tab-btn[aria-selected="true"] .tab-badge { background: var(--navy); color: #fff; }
@@ -262,7 +262,7 @@ main { max-width: var(--page); margin: 0 auto; padding: 28px var(--pad) 64px; }
 .disclaimer {
   padding: 14px 18px;
   background: var(--grey);
-  border-left: 4px solid var(--navy);
+  border-left: 4px solid var(--blue);
   font-size: 13.5px;
   color: var(--muted);
   max-width: 110ch;
@@ -330,7 +330,7 @@ main { max-width: var(--page); margin: 0 auto; padding: 28px var(--pad) 64px; }
   transition: background .15s, border-color .15s;
 }
 .dash-card:hover { background: var(--grey); }
-.dash-card.is-selected { background: var(--sky-50); outline: 2px solid var(--navy); outline-offset: -2px; }
+.dash-card.is-selected { background: var(--sky-50); outline: 2px solid var(--blue); outline-offset: -2px; }
 .dash-num { font-size: 40px; font-weight: 700; line-height: 1.05; letter-spacing: -1.5px; font-variant-numeric: tabular-nums; }
 .dash-label { font-size: 14.5px; font-weight: 700; }
 .dash-range { font-weight: 400; color: var(--muted); font-size: 12.5px; margin-left: 2px; }
@@ -350,7 +350,7 @@ main { max-width: var(--page); margin: 0 auto; padding: 28px var(--pad) 64px; }
 .progress__head span:first-child { font-weight: 700; color: var(--ink); }
 .progress__head b { color: var(--ink); }
 .progress__track { height: 8px; background: var(--sky-50); }
-.progress__bar { height: 100%; background: var(--navy); transition: width .3s ease; }
+.progress__bar { height: 100%; background: var(--blue); transition: width .3s ease; }
 
 /* Matrix */
 .matrix-block { background: var(--sky-50); padding: 20px 22px 18px; }
@@ -482,7 +482,7 @@ main { max-width: var(--page); margin: 0 auto; padding: 28px var(--pad) 64px; }
 .data-table .th-sub { display: block; font-size: 11.5px; font-weight: 400; color: var(--sky); }
 .data-table tbody td { padding: 8px 6px; border-bottom: 1px solid var(--line); vertical-align: top; }
 .data-table tbody tr:last-child td { border-bottom: 0; }
-.data-table tbody tr:hover { background: #f7fafc; }
+.data-table tbody tr:hover { background: #f8f9ff; }
 .data-table tbody tr.is-done { background: var(--grey); }
 .data-table tbody tr.is-done textarea,
 .data-table tbody tr.is-done td:first-child,
@@ -553,8 +553,8 @@ input[type="date"].cell-input.is-empty:not(:focus) { color: var(--faint); }
   display: inline-block;
   font-size: 11px; font-weight: 700; line-height: 1.2;
   padding: 2px 7px;
-  background: var(--sky-50);
-  color: var(--navy);
+  background: var(--sky);
+  color: var(--ink);
   border-radius: 100px;
 }
 .tag--warn { background: var(--red); color: #fff; cursor: help; }
@@ -581,8 +581,8 @@ td.col-act { padding-top: 10px !important; }
   background: var(--navy); color: #fff;
   cursor: help;
 }
-.stop-T { background: #2c6a9c; }
-.stop-O { background: var(--sky); color: var(--navy); }
+.stop-T { background: var(--blue); }
+.stop-O { background: var(--sky); color: var(--ink); }
 .stop-P { background: var(--grey); color: var(--ink); box-shadow: inset 0 0 0 1px var(--line); }
 .stop-none { background: transparent; cursor: default; }
 
